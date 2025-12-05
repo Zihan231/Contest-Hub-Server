@@ -1,9 +1,13 @@
 const { getContestsCollection } = require("../../config/db");
 
+// Create contest
 const createContest = async (req, res) => {
   try {
     const contestCollection = getContestsCollection();
-    const data = req.body;
+    let data = req.body;
+    data.participationCount = 0;
+    data.winnerName = null;
+    data.winnerPhoto = null;
     data.status = "pending";
 
     if (!data || Object.keys(data).length === 0) {
@@ -21,9 +25,9 @@ const createContest = async (req, res) => {
     }
 
     // Success: 201 Created
-    return res.status(201).json({
-      message: "Contest created successfully",
+      return res.status(201).json({
       contestId: result.insertedId,
+      message: "Contest created successfully",
       contest: data,
     });
   } catch (e) {
@@ -34,4 +38,19 @@ const createContest = async (req, res) => {
   }
 };
 
+// update contest info
+const updateContest = async (req, res) => {
+  const contestCollection = getContestsCollection();
+  const contestID = req.params;
+  const {
+    contestName,
+    image,
+    description,
+    instruction,
+    entryFee,
+    prizeMoney,
+    tags,
+    deadline,
+  } = req.body;
+};
 module.exports = { createContest };
