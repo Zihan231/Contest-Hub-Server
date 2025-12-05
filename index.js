@@ -22,6 +22,9 @@ async function startServer() {
     console.error("DB connection failed:", err);
   }
 }
+// Public API
+const publicRoutes = require("./src/routes/public/public.route");
+app.use("/public/contests", publicRoutes);
 
 // users
 const userRoutes = require("./src/routes/admin/admin.route");
