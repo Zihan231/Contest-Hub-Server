@@ -4,6 +4,7 @@ const createContest = async (req, res) => {
   try {
     const contestCollection = getContestsCollection();
     const data = req.body;
+    data.status = "pending";
 
     if (!data || Object.keys(data).length === 0) {
       return res.status(400).json({
