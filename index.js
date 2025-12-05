@@ -23,10 +23,17 @@ async function startServer() {
   }
 }
 
+// users
 const userRoutes = require("./src/routes/admin/admin.route");
 
 app.use("/users", userRoutes);
 
+// contests
+const contestRoutes = require("./src/routes/creator/creator.route");
+
+app.use("/contest/create", contestRoutes);
+
+// test server
 app.get("/", (req, res) => {
   res.send("Contest Hub Server is running !!!");
 });
