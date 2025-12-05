@@ -26,9 +26,11 @@ async function startServer() {
 const publicRoutes = require("./src/routes/public/public.route");
 app.use("/public/contests", publicRoutes);
 
-// users
+// Admin Routes
 const userRoutes = require("./src/routes/admin/admin.route");
+app.use("/admin/change/role", userRoutes);
 
+// users
 app.use("/users", userRoutes);
 
 // contests
