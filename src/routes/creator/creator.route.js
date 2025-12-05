@@ -1,8 +1,12 @@
 const express = require("express");
-const { createContest } = require("../../controllers/creator/creator.controller");
+const { createContest, updateContest } = require("../../controllers/creator/creator.controller");
 const router = express.Router();
 
-router.post("/", createContest)
+// create contest
+router.post("/", createContest);
 
+
+// Update contest
+router.patch("/:id", updateContest);
 
 module.exports = router;

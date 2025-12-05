@@ -44,7 +44,8 @@ const contestRoutes = require("./src/routes/creator/creator.route");
 // Create Contest
 app.use("/creator/contest/create", contestRoutes);
 
-
+// update contest
+app.use("/creator/contest/update", contestRoutes);
 
 
 

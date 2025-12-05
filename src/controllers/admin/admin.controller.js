@@ -124,7 +124,6 @@ const changeContestStatus = async (req, res) => {
     const result = await contestCollection.updateOne(filter, updateDoc);
 
     if (result.matchedCount === 0) {
-      // no contest found with that ID (safety, though we already checked above)
       return res.status(404).json({
         message: "Contest not found",
       });
