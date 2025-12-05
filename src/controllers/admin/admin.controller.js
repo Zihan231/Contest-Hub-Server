@@ -1,5 +1,8 @@
 const { ObjectId } = require("mongodb");
-const { getUsersCollection } = require("../../config/db");
+const {
+  getUsersCollection,
+  getContestsCollection,
+} = require("../../config/db");
 
 // see all users
 const getUsers = async (req, res) => {
@@ -68,4 +71,77 @@ const changeRole = async (req, res) => {
   }
 };
 
-module.exports = { getUsers,changeRole };
+
+// Approve / Reject Contest
+const changeContestStatus = async (req, res) => {
+  try {
+    const contestCollection = getContestsCollection();
+    const contestID = req.params.id;
+    const { status } = req.body;
+
+    // basic validation
+    if (!status) {
+      return res.status(400).json({
+        message: "status is required",
+      });
+    }
+
+    // validate ObjectId
+    let objectId;
+    try {
+      objectId = new ObjectId(contestID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid contest ID",
+      });
+    }
+
+    const query = { _id: objectId };
+    const contestData = await contestCollection.findOne(query);
+
+    if (!contestData) {
+      return res.status(404).json({
+        message: "Contest not found",
+      });
+    }
+
+    const oldStatus = contestData.status;
+
+    if (oldStatus === "confirmed") {
+      return res.status(409).json({
+        message: "Contest is already confirmed and cannot be updated",
+        currentStatus: oldStatus,
+      });
+    }
+
+    const filter = { _id: objectId };
+    const updateDoc = {
+      $set: {
+        status: status,
+      },
+    };
+
+    const result = await contestCollection.updateOne(filter, updateDoc);
+
+    if (result.matchedCount === 0) {
+      // no contest found with that ID (safety, though we already checked above)
+      return res.status(404).json({
+        message: "Contest not found",
+      });
+    }
+
+    // success
+    return res.status(200).json({
+      message: "Status updated successfully",
+      modifiedCount: result.modifiedCount,
+      newStatus: status,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to update status",
+    });
+  }
+};
+
+module.exports = { getUsers, changeRole, changeContestStatus };

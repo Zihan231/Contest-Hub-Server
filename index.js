@@ -22,23 +22,36 @@ async function startServer() {
     console.error("DB connection failed:", err);
   }
 }
-// Public API
+// --------------------->>> Public API <<<------------------------------
 const publicRoutes = require("./src/routes/public/public.route");
 app.use("/public/contests", publicRoutes);
 
-// Admin Routes
+// ----------------------------->>> Admin Routes <<<-------------------------------------
 const userRoutes = require("./src/routes/admin/admin.route");
+
+// Change Role
 app.use("/admin/change/role", userRoutes);
 
-// users
+// Accept/Reject Contest
+app.use("/admin/contest", userRoutes);
+
+//see all users
 app.use("/users", userRoutes);
 
-// contests
+// ---------------------------->>> Creator Routes <<<-------------------------------
 const contestRoutes = require("./src/routes/creator/creator.route");
 
-app.use("/contest/create", contestRoutes);
+// Create Contest
+app.use("/creator/contest/create", contestRoutes);
 
-// test server
+
+
+
+
+
+
+
+// ---------------------->>> test server <<<-------------------------------
 app.get("/", (req, res) => {
   res.send("Contest Hub Server is running !!!");
 });
