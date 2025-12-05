@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+// Env
+require("dotenv").config();
 const port = process.env.PORT || 3000;
 
 // middle ware
@@ -12,8 +14,7 @@ app.use(express.json());
 // DB Connection
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri =
-  "mongodb+srv://contesthub:VdIMBdSoONrocHhd@curd-service.6ebidhj.mongodb.net/?appName=Curd-Service";
+const uri = `mongodb+srv://${process.env.DB_UserName}:${process.env.DB_Pass}@curd-service.6ebidhj.mongodb.net/?appName=Curd-Service`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
