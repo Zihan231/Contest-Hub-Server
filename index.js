@@ -1,51 +1,33 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-// Env
-require("dotenv").config();
+// Port
 const port = process.env.PORT || 3000;
 
 // middle ware
 app.use(cors());
-
 // for json body parse
 app.use(express.json());
-
-// DB Connection
-
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri = `mongodb+srv://${process.env.DB_UserName}:${process.env.DB_Pass}@curd-service.6ebidhj.mongodb.net/?appName=Curd-Service`;
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
-
-async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
-  } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
-  }
-}
-run().catch(console.dir);
+// Import Database connection
+const { connectDB } = require("./src/config/db");
 
 // Test Server
+async function startServer() {
+  try {
+    await connectDB();
+    app.listen(port, () => {
+      console.log("Running on Port", port);
+    });
+  } catch (err) {
+    console.error("DB connection failed:", err);
+  }
+}
+
+const userRoutes = require("./src/routes/admin/admin.route");
+
+app.use("/users", userRoutes);
+
 app.get("/", (req, res) => {
   res.send("Contest Hub Server is running !!!");
 });
-
-app.listen(port, () => {
-  console.log("Running on Port", port);
-});
+startServer();
