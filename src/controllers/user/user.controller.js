@@ -113,10 +113,24 @@ const updateProfile = async (req, res) => {
 const participantsContest = async (req, res) => {
   try {
     const paymentsCollection = getPaymentsCollection();
-    const contestId = req.params.id;
+    const { contestId, userID } = req.body;
+
+    // check if this person enrolled in this contest
+
+    const validityQuery = {
+      contestId: new ObjectId(contestId),
+      participantId: new ObjectId(userID),
+    };
+
+    const valid = await paymentsCollection.findOne(validityQuery);
+    if (!valid) {
+      return res.status(403).json({
+        message: "Forbidden access: you are already enrolled in this contest",
+      });
+    }
 
     // fetching all participants for this contest
-    const query = { contestId };
+    const query = { contestId: new ObjectId(contestId) };
 
     const participantsData = await paymentsCollection
       .find(query, {

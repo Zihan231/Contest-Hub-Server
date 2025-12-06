@@ -15,7 +15,7 @@ router.get("/:id", getContestByID);
 router.patch("/update/:id", updateProfile);
 
 // see all Participants in a contest
-router.get("/participants/:id", participantsContest);
+router.post("/participants", participantsContest);
 
 // see participated contests
 router.get("/participated/:email", participatedContest);
