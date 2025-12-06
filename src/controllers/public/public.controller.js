@@ -1,10 +1,14 @@
 const { getContestsCollection } = require("../../config/db");
 
+// see all contest
 const getContest = async (req, res) => {
   try {
     const contestsCollection = getContestsCollection();
 
-    const contests = await contestsCollection.find({}).toArray();
+    const query = {
+      status: "confirmed"
+    }
+    const contests = await contestsCollection.find(query).toArray();
 
     if (!contests || contests.length === 0) {
       return res.status(404).json({
@@ -23,5 +27,8 @@ const getContest = async (req, res) => {
     });
   }
 };
+
+// signUp 
+
 
 module.exports = { getContest };
