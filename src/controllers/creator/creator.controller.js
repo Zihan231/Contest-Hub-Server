@@ -1,5 +1,8 @@
 const { ObjectId } = require("mongodb");
-const { getContestsCollection } = require("../../config/db");
+const {
+  getContestsCollection,
+  getUsersCollection,
+} = require("../../config/db");
 
 // Create contest
 const createContest = async (req, res) => {
@@ -7,6 +10,7 @@ const createContest = async (req, res) => {
     const contestCollection = getContestsCollection();
     let data = req.body;
     data.participationCount = 0;
+    data.winnerEmail = null;
     data.winnerName = null;
     data.winnerPhoto = null;
     data.status = "pending";
@@ -186,4 +190,118 @@ const deleteContest = async (req, res) => {
     });
   }
 };
-module.exports = { createContest, updateContest, deleteContest };
+
+// Declare a winner
+const declareWinner = async (req, res) => {
+  try {
+    const winnerID = req.body.winnerID;
+    const contestID = req.body.contestID;
+
+    // validate ObjectId
+    let winnerObjectId;
+    let contestObjectId;
+    try {
+      winnerObjectId = new ObjectId(winnerID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid winner ID",
+      });
+    }
+
+    try {
+      contestObjectId = new ObjectId(contestID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid contest ID",
+      });
+    }
+
+    // Check if user exist
+    const usersCollection = getUsersCollection();
+
+    const winnerQuery = { _id: winnerObjectId };
+    const userExist = await usersCollection.findOne(winnerQuery);
+
+    if (!userExist) {
+      return res.status(404).json({
+        message: "User Not Found",
+      });
+    }
+    const {
+      name: winnerName,
+      email: winnerEmail,
+      photoURL: winnerPhoto,
+    } = userExist;
+
+    // check if contest exist
+    const contestCollection = getContestsCollection();
+
+    const contestQuery = { _id: contestObjectId };
+    const contestExist = await contestCollection.findOne(contestQuery);
+
+    if (!contestExist) {
+      return res.status(404).json({
+        message: "Contest Not Found",
+      });
+    }
+    // if contest is approved by the admins
+    if (
+      contestExist.status === "pending" ||
+      contestExist.status === "rejected"
+    ) {
+      return res.status(409).json({
+        message:
+          "Contest is not confirmed yet, you cannot declare the winner now. Wait for deadline finish",
+      });
+    }
+    // check deadline
+    const deadline = new Date(contestExist.deadline);
+    const now = new Date();
+    if (now < deadline) {
+      return res.status(409).json({
+        message: "You cannot declare the winner before the contest deadline.",
+        deadline: contestExist.deadline,
+      });
+    }
+
+    // if contest has winner already
+    if (
+      (contestExist.winnerName !== null || contestExist.winnerEmail !== null,
+      contestExist.winnerPhoto !== null)
+    ) {
+      return res.status(409).json({
+        message: "This contest is over and winner is disclosed.",
+      });
+    }
+
+    // Declare the winner
+    const Update = {
+      $set: {
+        winnerName,
+        winnerEmail,
+        winnerPhoto,
+      },
+    };
+    const filter = { _id: contestObjectId };
+    const declareWinner = await contestCollection.updateOne(filter, Update);
+    if (declareWinner.matchedCount === 0) {
+      return res.status(404).json({
+        message: "Contest not found",
+      });
+    }
+
+    // success
+    return res.status(200).json({
+      message: "Contest updated successfully",
+      modifiedCount: declareWinner.modifiedCount,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to update contest",
+    });
+  }
+};
+
+
+module.exports = { createContest, updateContest, deleteContest, declareWinner };

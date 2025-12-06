@@ -45,6 +45,11 @@ const signUp = async (req, res) => {
         message: "Email is required",
       });
     }
+    if (role === "admin") {
+      return res.status(403).json({
+        message: "You are not allowed to sign up as admin",
+      });
+    }
 
     // check if user already exists
     const existingUser = await usersCollection.findOne({ email });

@@ -50,10 +50,21 @@ const contestRoutes = require("./src/routes/creator/creator.route");
 app.use("/creator/contest/create", contestRoutes);
 
 // update contest
-app.use("/creator/contest/update", contestRoutes);
+app.use("/creator/contest", contestRoutes);
 
 // Delete contest
 app.use("/creator/contest/delete", contestRoutes);
+
+// Declare winner
+app.use("/creator/contest", contestRoutes);
+
+
+
+
+
+
+
+
 
 
 
