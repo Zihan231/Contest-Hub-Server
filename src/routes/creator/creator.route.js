@@ -3,14 +3,13 @@ const { createContest, updateContest,deleteContest, declareWinner } = require(".
 const router = express.Router();
 
 // create contest
-router.post("/", createContest);
-
+router.post("/create", createContest);
 
 // Update contest
 router.patch("/update/:id", updateContest);
 
 // Delete contest
-router.delete("/:id", deleteContest);
+router.delete("/delete/:id", deleteContest);
 
 // Declare winner
 router.patch("/declare/winner", declareWinner);

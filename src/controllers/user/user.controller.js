@@ -46,6 +46,8 @@ const getContestByID = async (req, res) => {
 
 // Update Profile
 const updateProfile = async (req, res) => {
+  console.log("Hello");
+
   try {
     const usersCollection = getUsersCollection();
     const UserID = req.params;
@@ -145,4 +147,169 @@ const participantsContest = async (req, res) => {
   }
 };
 
-module.exports = { getContestByID, updateProfile, participantsContest };
+// see the participated contests
+const participatedContest = async (req, res) => {
+  try {
+    const userEmail = req.params.email;
+    const paymentsCollection = getPaymentsCollection();
+
+    if (!userEmail) {
+      return res.status(400).json({
+        message: "User email is required",
+      });
+    }
+
+    const query = { participantEmail: userEmail };
+    const details = await paymentsCollection.find(query).toArray();
+
+    if (!details || details.length === 0) {
+      return res.status(404).json({
+        message: "No participated contests found for this user",
+      });
+    }
+
+    // success
+    return res.status(200).json({
+      message: "Participated contests fetched successfully",
+      count: details.length,
+      data: details,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch participated contests",
+    });
+  }
+};
+
+// Participate in Contest
+const joinContest = async (req, res) => {
+  try {
+    const { contestID, userID } = req.body;
+
+    if (!contestID || !userID) {
+      return res.status(400).json({
+        message: "contestID and userID are required",
+      });
+    }
+
+    const contestCollection = getContestsCollection();
+    const usersCollection = getUsersCollection();
+    const paymentsCollection = getPaymentsCollection();
+
+    // validate userID ObjectId
+    let userIDObject;
+    try {
+      userIDObject = new ObjectId(userID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid User ID",
+      });
+    }
+
+    // Check if user exist
+    const userQuery = { _id: userIDObject };
+    const userExist = await usersCollection.findOne(userQuery);
+
+    if (!userExist) {
+      return res.status(404).json({
+        message: "User Not Found",
+      });
+    }
+
+    const { name: userName, email: userEmail, photoURL: userPhoto } = userExist;
+
+    // validate contest ObjectId
+    let contestObjectId;
+    try {
+      contestObjectId = new ObjectId(contestID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid contest ID",
+      });
+    }
+
+    // fetching the contest
+    const contestQuery = { _id: contestObjectId };
+    const contestData = await contestCollection.findOne(contestQuery);
+
+    if (!contestData) {
+      return res.status(404).json({
+        message: "Contest not found",
+      });
+    }
+
+    // check deadline
+    const deadline = new Date(contestData.deadline);
+    const now = new Date();
+    if (now > deadline) {
+      return res.status(409).json({
+        message: "This contest is over, better luck next time.",
+        deadline: contestData.deadline,
+      });
+    }
+
+    const { contestName, entryFee } = contestData;
+
+    // check if the user already joined this contest
+    const userContestQuery = {
+      contestId: contestObjectId,
+      participantId: userIDObject,
+    };
+    const alreadyExist = await paymentsCollection.findOne(userContestQuery);
+    if (alreadyExist) {
+      return res.status(409).json({
+        message: "You have already joined this contest",
+      });
+    }
+
+    // payment logic will come here later
+
+    const inputData = {
+      contestName,
+      contestId: contestObjectId, // use ObjectId
+      participantId: userIDObject, // use ObjectId
+      participantName: userName,
+      participantEmail: userEmail,
+      participantPhoto: userPhoto,
+      price: entryFee,
+      paymentStatus: "paid",
+      transactionId: "zzz-qqq-ddd", // temp
+      taskSubmission: null,
+      submissionDate: new Date(),
+    };
+
+    // insert into payments collection
+    const insertResult = await paymentsCollection.insertOne(inputData);
+
+    if (!insertResult.acknowledged) {
+      return res.status(500).json({
+        message: "Failed to join contest",
+      });
+    }
+
+    // increase participation count
+    await contestCollection.updateOne(contestQuery, {
+      $inc: { participationCount: 1 },
+    });
+
+    return res.status(201).json({
+      message: "Successfully joined the contest",
+      paymentId: insertResult.insertedId,
+      data: inputData,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Server error while joining contest",
+    });
+  }
+};
+
+module.exports = {
+  getContestByID,
+  updateProfile,
+  participantsContest,
+  participatedContest,
+  joinContest,
+};

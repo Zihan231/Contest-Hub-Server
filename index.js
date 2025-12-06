@@ -47,15 +47,6 @@ app.use("/users", adminRoute);
 const contestRoutes = require("./src/routes/creator/creator.route");
 
 // Create Contest
-app.use("/creator/contest/create", contestRoutes);
-
-// update contest
-app.use("/creator/contest", contestRoutes);
-
-// Delete contest
-app.use("/creator/contest/delete", contestRoutes);
-
-// Declare winner
 app.use("/creator/contest", contestRoutes);
 
 
@@ -63,15 +54,11 @@ app.use("/creator/contest", contestRoutes);
 
 const userRoutes = require("./src/routes/user/user.route");
 
-// get contest by ID
-app.use("/user/contest", userRoutes);
-
 // Update User Profile
 app.use("/user/profile", userRoutes);
 
 // see all participants in a contest 
 app.use("/user/contest", userRoutes);
-
 
 
 
