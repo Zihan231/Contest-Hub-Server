@@ -1,5 +1,5 @@
 const express = require("express");
-const { createContest, updateContest,deleteContest, declareWinner } = require("../../controllers/creator/creator.controller");
+const { createContest, updateContest,deleteContest, declareWinner, getParticipants, getContestByEmail } = require("../../controllers/creator/creator.controller");
 const router = express.Router();
 
 // create contest
@@ -13,5 +13,11 @@ router.delete("/delete/:id", deleteContest);
 
 // Declare winner
 router.patch("/declare/winner", declareWinner);
+
+// see all participants
+router.post("/participants", getParticipants);
+
+// see own created contests
+router.get("/all/:email", getContestByEmail);
 
 module.exports = router;

@@ -2,6 +2,7 @@ const { ObjectId } = require("mongodb");
 const {
   getContestsCollection,
   getUsersCollection,
+  getPaymentsCollection,
 } = require("../../config/db");
 
 // Create contest
@@ -191,6 +192,58 @@ const deleteContest = async (req, res) => {
   }
 };
 
+// see participants in a contest
+const getParticipants = async (req, res) => {
+  try {
+    const paymentsCollection = getPaymentsCollection();
+    const { contestId, userEmail } = req.body;
+
+    // check if this person enrolled in this contest
+
+    const validityQuery = {
+      contestId: new ObjectId(contestId),
+      creatorEmail: userEmail,
+    };
+
+    const valid = await paymentsCollection.findOne(validityQuery);
+    if (!valid) {
+      return res.status(403).json({
+        message: "Forbidden access: This is not your contest",
+      });
+    }
+
+    // fetching all participants for this contest
+    const query = { contestId: new ObjectId(contestId) };
+
+    const participantsData = await paymentsCollection
+      .find(query, {
+        projection: {
+          participantName: 1,
+          participantEmail: 1,
+          participantPhoto: 1,
+          _id: 0,
+        },
+      })
+      .toArray();
+
+    if (participantsData.length === 0) {
+      return res.status(404).json({
+        message: "No participants found for this contest",
+      });
+    }
+    // success
+    return res.status(200).json({
+      message: "Data fetched successfully",
+      participantsData,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch data",
+    });
+  }
+};
+
 // Declare a winner
 const declareWinner = async (req, res) => {
   try {
@@ -306,5 +359,40 @@ const declareWinner = async (req, res) => {
   }
 };
 
+// see own created contests
+const getContestByEmail = async (req, res) => {
+  try {
+    const userEmail = req.params.email;
 
-module.exports = { createContest, updateContest, deleteContest, declareWinner };
+    if (!userEmail) {
+      return res.status(400).json({
+        message: "Email is required",
+      });
+    }
+
+    const contestCollection = getContestsCollection();
+
+    const query = { creatorEmail: userEmail };
+    const contests = await contestCollection.find(query).toArray();
+
+    if (!contests || contests.length === 0) {
+      return res.status(404).json({
+        message: "No contests found for this email",
+      });
+    }
+
+    // success
+    return res.status(200).json({
+      message: "Contests fetched successfully",
+      count: contests.length,
+      data: contests,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch contests",
+    });
+  }
+};
+
+module.exports = { createContest, updateContest, deleteContest, declareWinner,getParticipants,getContestByEmail };

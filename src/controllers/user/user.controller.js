@@ -263,7 +263,7 @@ const joinContest = async (req, res) => {
       });
     }
 
-    const { contestName, entryFee } = contestData;
+    const { contestName, entryFee, creatorEmail } = contestData;
 
     // check if the user already joined this contest
     const userContestQuery = {
@@ -282,6 +282,7 @@ const joinContest = async (req, res) => {
     const inputData = {
       contestName,
       contestId: contestObjectId, // use ObjectId
+      creatorEmail: creatorEmail,
       participantId: userIDObject, // use ObjectId
       participantName: userName,
       participantEmail: userEmail,
