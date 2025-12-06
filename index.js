@@ -66,6 +66,8 @@ const userRoutes = require("./src/routes/user/user.route");
 // get contest by ID
 app.use("/user/contest", userRoutes);
 
+// Update User Profile
+app.use("/user/profile", userRoutes);
 
 
 
