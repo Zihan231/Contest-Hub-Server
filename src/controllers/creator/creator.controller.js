@@ -66,6 +66,7 @@ const updateContest = async (req, res) => {
       });
     }
 
+    // feting the contest if available ok else error
     const query = { _id: objectId };
     const contestData = await contestCollection.findOne(query);
 
@@ -75,6 +76,7 @@ const updateContest = async (req, res) => {
       });
     }
 
+    // if status confirm can't delete/update
     const oldStatus = contestData.status;
 
     if (oldStatus === "confirmed") {
@@ -112,8 +114,8 @@ const updateContest = async (req, res) => {
       return res.status(404).json({
         message: "Contest not found",
       });
-      }
-      
+    }
+
     // success
     return res.status(200).json({
       message: "Contest updated successfully",
@@ -126,4 +128,62 @@ const updateContest = async (req, res) => {
     });
   }
 };
-module.exports = { createContest, updateContest };
+
+// Delete Own contest
+const deleteContest = async (req, res) => {
+  try {
+    const contestCollection = getContestsCollection();
+    const { id: contestID } = req.params;
+
+    // validate ObjectId
+    let objectId;
+    try {
+      objectId = new ObjectId(contestID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid contest ID",
+      });
+    }
+
+    // fetching the contest
+    const query = { _id: objectId };
+    const contestData = await contestCollection.findOne(query);
+
+    if (!contestData) {
+      return res.status(404).json({
+        message: "Contest not found",
+      });
+    }
+
+    // if status confirmed can't delete
+    const oldStatus = contestData.status;
+
+    if (oldStatus === "confirmed") {
+      return res.status(409).json({
+        message: "Contest is already confirmed and cannot be deleted",
+        currentStatus: oldStatus,
+      });
+    }
+
+    const result = await contestCollection.deleteOne(query);
+
+    if (result.deletedCount === 0) {
+      // safety check
+      return res.status(404).json({
+        message: "Contest not found or already deleted",
+      });
+    }
+
+    // success
+    return res.status(200).json({
+      message: "Contest deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to delete contest",
+    });
+  }
+};
+module.exports = { createContest, updateContest, deleteContest };
