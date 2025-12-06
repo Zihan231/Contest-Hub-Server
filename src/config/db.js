@@ -41,9 +41,16 @@ function getContestsCollection() {
   }
   return database.collection("contests");
 }
+function getPaymentsCollection() {
+  if (!database) {
+    throw new Error("Problem detected in Database");
+  }
+  return database.collection("payments");
+}
 
 module.exports = {
   connectDB,
   getUsersCollection,
   getContestsCollection,
+  getPaymentsCollection,
 };
