@@ -90,4 +90,45 @@ const signUp = async (req, res) => {
   }
 };
 
-module.exports = { getContest, signUp };
+// Leaderboard (top winners)
+const getLeaderboard = async (req, res) => {
+  try {
+    const usersCollection = getUsersCollection();
+
+    // optional: allow ?limit=5, default 10
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const leaders = await usersCollection
+      .find(
+        {}, // or { role: "user" } if you want only normal users
+        {
+          projection: {
+            password: 0,
+          },
+        }
+      )
+      .sort({ winCount: -1 }) // highest winCount first
+      .limit(limit)
+      .toArray();
+
+    if (!leaders || leaders.length === 0) {
+      return res.status(404).json({
+        message: "No users found for leaderboard",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Leaderboard fetched successfully",
+      count: leaders.length,
+      data: leaders,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch leaderboard",
+    });
+  }
+};
+
+
+module.exports = { getContest, signUp,getLeaderboard };

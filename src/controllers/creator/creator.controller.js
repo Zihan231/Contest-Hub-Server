@@ -345,7 +345,10 @@ const declareWinner = async (req, res) => {
         message: "Contest not found",
       });
     }
-
+    // increase winCount count
+    await usersCollection.updateOne(winnerQuery, {
+      $inc: { winCount: 1 },
+    });
     // success
     return res.status(200).json({
       message: "Winner declared successfully",

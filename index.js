@@ -26,10 +26,7 @@ async function startServer() {
 const publicRoutes = require("./src/routes/public/public.route");
 
 // SignUp
-app.use("/public/signUp", publicRoutes);
-
-// see all confirmed contests
-app.use("/public/contests", publicRoutes);
+app.use("/public", publicRoutes);
 
 // ----------------------------->>> Admin Routes <<<-------------------------------------
 const adminRoute = require("./src/routes/admin/admin.route");
