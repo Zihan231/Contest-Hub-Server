@@ -2,6 +2,7 @@ const { ObjectId } = require("mongodb");
 const {
   getContestsCollection,
   getUsersCollection,
+  getPaymentsCollection,
 } = require("../../config/db");
 
 // get Contest by Id
@@ -108,6 +109,29 @@ const updateProfile = async (req, res) => {
 
 // see participated contest
 const participatedContest = async (req, res) => {
+  const paymentsCollection = getPaymentsCollection();
+  // const contestCollection = getContestsCollection();
+  const contestID = req.params;
+
+  // validate ObjectId
+    let objectId;
+    try {
+      objectId = new ObjectId(contestID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid contest ID",
+      });
+  }
+  // feting the contest if available ok else error
+    const query = { contestId: objectId };
+    const contestData = await paymentsCollection.findOne(query);
+
+    if (!contestData) {
+      return res.status(404).json({
+        message: "Contest not found",
+      });
+  }
+  
   
 }
 module.exports = { getContestByID,updateProfile };
