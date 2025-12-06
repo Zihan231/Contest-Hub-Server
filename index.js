@@ -24,6 +24,11 @@ async function startServer() {
 }
 // --------------------->>> Public API <<<------------------------------
 const publicRoutes = require("./src/routes/public/public.route");
+
+// SignUp
+app.use("/public/signUp", publicRoutes);
+
+// see all confirmed contests
 app.use("/public/contests", publicRoutes);
 
 // ----------------------------->>> Admin Routes <<<-------------------------------------
