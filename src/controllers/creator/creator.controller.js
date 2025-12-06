@@ -218,7 +218,6 @@ const declareWinner = async (req, res) => {
 
     // Check if user exist
     const usersCollection = getUsersCollection();
-
     const winnerQuery = { _id: winnerObjectId };
     const userExist = await usersCollection.findOne(winnerQuery);
 
@@ -227,6 +226,7 @@ const declareWinner = async (req, res) => {
         message: "User Not Found",
       });
     }
+
     const {
       name: winnerName,
       email: winnerEmail,
@@ -235,7 +235,6 @@ const declareWinner = async (req, res) => {
 
     // check if contest exist
     const contestCollection = getContestsCollection();
-
     const contestQuery = { _id: contestObjectId };
     const contestExist = await contestCollection.findOne(contestQuery);
 
@@ -244,6 +243,7 @@ const declareWinner = async (req, res) => {
         message: "Contest Not Found",
       });
     }
+
     // if contest is approved by the admins
     if (
       contestExist.status === "pending" ||
@@ -254,6 +254,7 @@ const declareWinner = async (req, res) => {
           "Contest is not confirmed yet, you cannot declare the winner now. Wait for deadline finish",
       });
     }
+
     // check deadline
     const deadline = new Date(contestExist.deadline);
     const now = new Date();
@@ -266,11 +267,12 @@ const declareWinner = async (req, res) => {
 
     // if contest has winner already
     if (
-      (contestExist.winnerName !== null || contestExist.winnerEmail !== null,
-      contestExist.winnerPhoto !== null)
+      contestExist.winnerName ||
+      contestExist.winnerEmail ||
+      contestExist.winnerPhoto
     ) {
       return res.status(409).json({
-        message: "This contest is over and winner is disclosed.",
+        message: "This contest is over and winner is already declared.",
       });
     }
 
@@ -283,8 +285,9 @@ const declareWinner = async (req, res) => {
       },
     };
     const filter = { _id: contestObjectId };
-    const declareWinner = await contestCollection.updateOne(filter, Update);
-    if (declareWinner.matchedCount === 0) {
+    const result = await contestCollection.updateOne(filter, Update);
+
+    if (result.matchedCount === 0) {
       return res.status(404).json({
         message: "Contest not found",
       });
@@ -292,8 +295,8 @@ const declareWinner = async (req, res) => {
 
     // success
     return res.status(200).json({
-      message: "Contest updated successfully",
-      modifiedCount: declareWinner.modifiedCount,
+      message: "Winner declared successfully",
+      modifiedCount: result.modifiedCount,
     });
   } catch (e) {
     console.error(e);
