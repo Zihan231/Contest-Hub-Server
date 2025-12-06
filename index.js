@@ -69,8 +69,8 @@ app.use("/user/contest", userRoutes);
 // Update User Profile
 app.use("/user/profile", userRoutes);
 
-
-
+// see all participants in a contest 
+app.use("/user/contest", userRoutes);
 
 
 

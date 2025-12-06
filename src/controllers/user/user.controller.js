@@ -107,31 +107,42 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// see participated contest
-const participatedContest = async (req, res) => {
-  const paymentsCollection = getPaymentsCollection();
-  // const contestCollection = getContestsCollection();
-  const contestID = req.params;
+// see participants in a contest
+const participantsContest = async (req, res) => {
+  try {
+    const paymentsCollection = getPaymentsCollection();
+    const contestId = req.params.id;
 
-  // validate ObjectId
-    let objectId;
-    try {
-      objectId = new ObjectId(contestID);
-    } catch (e) {
-      return res.status(400).json({
-        message: "Invalid contest ID",
-      });
-  }
-  // feting the contest if available ok else error
-    const query = { contestId: objectId };
-    const contestData = await paymentsCollection.findOne(query);
+    // fetching all participants for this contest
+    const query = { contestId };
 
-    if (!contestData) {
+    const participantsData = await paymentsCollection
+      .find(query, {
+        projection: {
+          participantName: 1,
+          participantEmail: 1,
+          participantPhoto: 1,
+          _id: 0,
+        },
+      })
+      .toArray();
+
+    if (participantsData.length === 0) {
       return res.status(404).json({
-        message: "Contest not found",
+        message: "No participants found for this contest",
       });
+    }
+    // success
+    return res.status(200).json({
+      message: "Data fetched successfully",
+      participantsData,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch data",
+    });
   }
-  
-  
-}
-module.exports = { getContestByID,updateProfile };
+};
+
+module.exports = { getContestByID, updateProfile, participantsContest };
