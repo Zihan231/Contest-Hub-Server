@@ -32,16 +32,16 @@ app.use("/public/signUp", publicRoutes);
 app.use("/public/contests", publicRoutes);
 
 // ----------------------------->>> Admin Routes <<<-------------------------------------
-const userRoutes = require("./src/routes/admin/admin.route");
+const adminRoute = require("./src/routes/admin/admin.route");
 
 // Change Role
-app.use("/admin/change/role", userRoutes);
+app.use("/admin/change/role", adminRoute);
 
 // Accept/Reject Contest
-app.use("/admin/contest", userRoutes);
+app.use("/admin/contest", adminRoute);
 
 //see all users
-app.use("/users", userRoutes);
+app.use("/users", adminRoute);
 
 // ---------------------------->>> Creator Routes <<<-------------------------------
 const contestRoutes = require("./src/routes/creator/creator.route");
@@ -59,6 +59,12 @@ app.use("/creator/contest/delete", contestRoutes);
 app.use("/creator/contest", contestRoutes);
 
 
+// ----------------------------->>> User Route <<<-------------------------
+
+const userRoutes = require("./src/routes/user/user.route");
+
+// get contest by ID
+app.use("/user/contest", userRoutes);
 
 
 
