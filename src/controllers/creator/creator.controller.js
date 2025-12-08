@@ -329,6 +329,19 @@ const declareWinner = async (req, res) => {
       });
     }
 
+    // check if user paid
+    const paymentsCollection = getPaymentsCollection();
+    const userContestQuery = {
+      contestId: contestObjectId,
+      participantId: winnerObjectId,
+    };
+    const Exist = await paymentsCollection.findOne(userContestQuery);
+    if (!Exist) {
+      return res.status(409).json({
+        message: "Payment is not clear.",
+      });
+    }
+
     // Declare the winner
     const Update = {
       $set: {
@@ -357,7 +370,7 @@ const declareWinner = async (req, res) => {
   } catch (e) {
     console.error(e);
     return res.status(500).json({
-      message: "Failed to update contest",
+      message: "Declaration Failed",
     });
   }
 };
@@ -397,5 +410,6 @@ const getContestByEmail = async (req, res) => {
     });
   }
 };
+
 
 module.exports = { createContest, updateContest, deleteContest, declareWinner,getParticipants,getContestByEmail };

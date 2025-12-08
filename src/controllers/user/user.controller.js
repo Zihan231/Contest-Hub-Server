@@ -321,10 +321,74 @@ const joinContest = async (req, res) => {
   }
 };
 
+// Winning percentage
+const winRate = async (req, res) => {
+  try {
+    const usersCollection = getUsersCollection();
+    const paymentsCollection = getPaymentsCollection();
+
+    const userID = req.params.id;
+
+    // validate ObjectId
+    let objectId;
+    try {
+      objectId = new ObjectId(userID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid user ID",
+      });
+    }
+
+    // validate User
+    const userFound = await usersCollection.findOne({ _id: objectId });
+
+    if (!userFound) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const totalWin = userFound.winCount || 0;
+
+    // find total participated contests
+    const totalParticipations = await paymentsCollection.countDocuments({
+      participantId: objectId,
+    });
+
+    // if no participation, win rate is 0 by definition
+    if (totalParticipations === 0) {
+      return res.status(200).json({
+        message: "No participations found for this user",
+        userId: userID,
+        totalWin,
+        totalParticipations,
+        winRate: 0,
+      });
+    }
+
+    // Win Percentage = (Total Wins / Total Participations) * 100
+    const winRateValue = (totalWin / totalParticipations) * 100;
+    const winRateRounded = Number(winRateValue.toFixed(2));
+
+    return res.status(200).json({
+      message: "Win rate calculated successfully",
+      userId: userID,
+      totalWin,
+      totalParticipations,
+      winRate: winRateRounded, // in percentage
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to calculate win rate",
+    });
+  }
+};
 module.exports = {
   getContestByID,
   updateProfile,
   participantsContest,
   participatedContest,
   joinContest,
+  winRate
 };

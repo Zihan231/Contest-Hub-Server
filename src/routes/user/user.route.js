@@ -5,6 +5,7 @@ const {
   participantsContest,
   participatedContest,
   joinContest,
+  winRate,
 } = require("../../controllers/user/user.controller");
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.get("/participated/:email", participatedContest);
 // Join in contest
 router.post("/join", joinContest);
 
-
+// Win rate
+router.get("/winRate/:id", winRate)
 
 module.exports = router;
