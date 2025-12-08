@@ -3,6 +3,7 @@ const {
   getUsers,
   changeRole,
   changeContestStatus,
+  deleteContest,
 } = require("../../controllers/admin/admin.controller");
 const router = express.Router();
 
@@ -10,10 +11,13 @@ const router = express.Router();
 router.get("/", getUsers);
 
 // change role
-router.patch("/:id", changeRole);
+router.patch("/role/:id", changeRole);
 
 // Accept/Reject
 router.patch("/status/:id", changeContestStatus);
+
+// Delete contest
+router.delete("/delete/:id", deleteContest);
 
 
 module.exports = router;

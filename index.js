@@ -32,7 +32,7 @@ app.use("/public", publicRoutes);
 const adminRoute = require("./src/routes/admin/admin.route");
 
 // Change Role
-app.use("/admin/change/role", adminRoute);
+app.use("/admin/change", adminRoute);
 
 // Accept/Reject Contest
 app.use("/admin/contest", adminRoute);

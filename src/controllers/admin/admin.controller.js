@@ -71,7 +71,6 @@ const changeRole = async (req, res) => {
   }
 };
 
-
 // Approve / Reject Contest
 const changeContestStatus = async (req, res) => {
   try {
@@ -143,4 +142,60 @@ const changeContestStatus = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, changeRole, changeContestStatus };
+// Delete Contest
+const deleteContest = async (req, res) => {
+  try {
+    const contestCollection = getContestsCollection();
+    const contestID = req.params.id;
+
+    // validate ObjectId
+    let objectId;
+    try {
+      objectId = new ObjectId(contestID);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid contest ID",
+      });
+    }
+
+    const query = { _id: objectId };
+    const contestData = await contestCollection.findOne(query);
+
+    if (!contestData) {
+      return res.status(404).json({
+        message: "Contest not found",
+      });
+    }
+
+    const oldStatus = contestData.status;
+
+    if (oldStatus === "confirmed") {
+      return res.status(409).json({
+        message: "Contest is already confirmed and cannot be deleted",
+        currentStatus: oldStatus,
+      });
+    }
+
+    const result = await contestCollection.deleteOne(query);
+
+    if (result.deletedCount === 0) {
+      // safety check
+      return res.status(404).json({
+        message: "Contest not found or already deleted",
+      });
+    }
+
+    // success
+    return res.status(200).json({
+      message: "Contest deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to delete contest",
+    });
+  }
+};
+
+module.exports = { getUsers, changeRole, changeContestStatus,deleteContest };
