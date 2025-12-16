@@ -50,9 +50,9 @@ const signUp = async (req, res) => {
         message: "You are not allowed to sign up as admin",
       });
     }
-
+    const finalEmail = email.toLowerCase();
     // check if user already exists
-    const existingUser = await usersCollection.findOne({ email });
+    const existingUser = await usersCollection.findOne({ finalEmail });
 
     if (existingUser) {
       return res.status(409).json({
@@ -62,7 +62,7 @@ const signUp = async (req, res) => {
 
     const newUser = {
       name: name || "",
-      email,
+      email: finalEmail,
       photoURL,
       role: role || "user",
       bio,
@@ -162,16 +162,15 @@ const getRole = async (req, res) => {
   try {
     const usersCollection = getUsersCollection();
     const { email } = req.params; 
-
-    if (!email) {
+    const finalEmail = email.toLowerCase();
+    if (!finalEmail) {
       return res.status(400).json({
         message: "Email is required",
-        example: "/users/role?email=nancy@example.com",
       });
     }
 
     const user = await usersCollection.findOne(
-      { email },
+      { email: finalEmail },
       { projection: { role: 1, email: 1, name: 1 } }
     );
 
@@ -186,7 +185,7 @@ const getRole = async (req, res) => {
       role: user.role || "user",
       user: {
         name: user.name,
-        email: user.email,
+        email: user.finalEmail,
       },
     });
   } catch (e) {
