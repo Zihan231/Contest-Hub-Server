@@ -7,10 +7,11 @@ const {
   joinContest,
   winRate,
 } = require("../../controllers/user/user.controller");
+const { default: verifyFirebaseToken } = require("../../middleware/FirebaseAuth/verifyFirebaseToken");
 const router = express.Router();
 
 // get contest by ID
-router.get("/:id", getContestByID);
+router.get("/:id", verifyFirebaseToken, getContestByID);
 
 //Update Profile
 router.patch("/update/:id", updateProfile);

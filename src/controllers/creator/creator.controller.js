@@ -244,72 +244,73 @@ const getParticipants = async (req, res) => {
   }
 };
 
-// Declare a winner
+// Declare a winner and update winner's totalEarnings
 const declareWinner = async (req, res) => {
   try {
-    const winnerID = req.body.winnerID;
-    const contestID = req.body.contestID;
+    const { winnerID, contestID } = req.body;
+
+    if (!winnerID || !contestID) {
+      return res.status(400).json({
+        message: "winnerID and contestID are required",
+      });
+    }
 
     // validate ObjectId
     let winnerObjectId;
     let contestObjectId;
+
     try {
       winnerObjectId = new ObjectId(winnerID);
     } catch (e) {
-      return res.status(400).json({
-        message: "Invalid winner ID",
-      });
+      return res.status(400).json({ message: "Invalid winner ID" });
     }
 
     try {
       contestObjectId = new ObjectId(contestID);
     } catch (e) {
-      return res.status(400).json({
-        message: "Invalid contest ID",
-      });
+      return res.status(400).json({ message: "Invalid contest ID" });
     }
 
-    // Check if user exist
     const usersCollection = getUsersCollection();
+    const contestCollection = getContestsCollection();
+    const paymentsCollection = getPaymentsCollection();
+
+    // Check if user exists
     const winnerQuery = { _id: winnerObjectId };
     const userExist = await usersCollection.findOne(winnerQuery);
 
     if (!userExist) {
-      return res.status(404).json({
-        message: "User Not Found",
-      });
+      return res.status(404).json({ message: "User Not Found" });
     }
 
-    const {
-      name: winnerName,
-      email: winnerEmail,
-      photoURL: winnerPhoto,
-    } = userExist;
+    const { name: winnerName, email: winnerEmail, photoURL: winnerPhoto } =
+      userExist;
 
-    // check if contest exist
-    const contestCollection = getContestsCollection();
+    // Check if contest exists
     const contestQuery = { _id: contestObjectId };
     const contestExist = await contestCollection.findOne(contestQuery);
 
     if (!contestExist) {
-      return res.status(404).json({
-        message: "Contest Not Found",
-      });
+      return res.status(404).json({ message: "Contest Not Found" });
     }
 
-    // if contest is approved by the admins
-    if (
-      contestExist.status === "pending" ||
-      contestExist.status === "rejected"
-    ) {
+    // Contest must be confirmed
+    if (contestExist.status === "pending" || contestExist.status === "rejected") {
       return res.status(409).json({
         message:
           "Contest is not confirmed yet, you cannot declare the winner now. Wait for deadline finish",
       });
     }
 
-    // check deadline
+    // Check deadline
     const deadline = new Date(contestExist.deadline);
+    if (Number.isNaN(deadline.getTime())) {
+      return res.status(400).json({
+        message: "Invalid contest deadline date",
+        deadline: contestExist.deadline,
+      });
+    }
+
     const now = new Date();
     if (now < deadline) {
       return res.status(409).json({
@@ -318,54 +319,71 @@ const declareWinner = async (req, res) => {
       });
     }
 
-    // if contest has winner already
-    if (
-      contestExist.winnerName ||
-      contestExist.winnerEmail ||
-      contestExist.winnerPhoto
-    ) {
+    // If contest already has winner
+    if (contestExist.winnerName || contestExist.winnerEmail || contestExist.winnerPhoto) {
       return res.status(409).json({
         message: "This contest is over and winner is already declared.",
       });
     }
 
-    // check if user paid
-    const paymentsCollection = getPaymentsCollection();
+    // Check if user paid for this contest
     const userContestQuery = {
       contestId: contestObjectId,
       participantId: winnerObjectId,
     };
-    const Exist = await paymentsCollection.findOne(userContestQuery);
-    if (!Exist) {
+
+    const paymentExist = await paymentsCollection.findOne(userContestQuery);
+    if (!paymentExist) {
       return res.status(409).json({
         message: "Payment is not clear.",
       });
     }
 
-    // Declare the winner
-    const Update = {
+    // Prize money (must be a valid number)
+    const prizeMoney = Number(contestExist.prizeMoney || 0);
+    if (Number.isNaN(prizeMoney) || prizeMoney < 0) {
+      return res.status(400).json({
+        message: "Invalid prizeMoney in contest data",
+        prizeMoney: contestExist.prizeMoney,
+      });
+    }
+
+    // Declare winner (atomic filter to prevent double declare in race condition)
+    const filter = {
+      _id: contestObjectId,
+      winnerEmail: { $exists: false },
+      winnerName: { $exists: false },
+      winnerPhoto: { $exists: false },
+    };
+
+    const update = {
       $set: {
         winnerName,
         winnerEmail,
         winnerPhoto,
       },
     };
-    const filter = { _id: contestObjectId };
-    const result = await contestCollection.updateOne(filter, Update);
+
+    const result = await contestCollection.updateOne(filter, update);
 
     if (result.matchedCount === 0) {
-      return res.status(404).json({
-        message: "Contest not found",
+      return res.status(409).json({
+        message: "Winner already declared (or contest not found).",
       });
     }
-    // increase winCount count
+
+    // Update winner stats: winCount + totalEarnings (previous + prizeMoney)
     await usersCollection.updateOne(winnerQuery, {
-      $inc: { winCount: 1 },
+      $inc: {
+        winCount: 1,
+        totalEarnings: prizeMoney,
+      },
     });
-    // success
+
     return res.status(200).json({
       message: "Winner declared successfully",
       modifiedCount: result.modifiedCount,
+      addedEarnings: prizeMoney,
     });
   } catch (e) {
     console.error(e);
@@ -374,6 +392,7 @@ const declareWinner = async (req, res) => {
     });
   }
 };
+
 
 // see own created contests
 const getContestByEmail = async (req, res) => {

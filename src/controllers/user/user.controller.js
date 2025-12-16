@@ -10,7 +10,6 @@ const getContestByID = async (req, res) => {
   try {
     const contestCollection = getContestsCollection();
     const { id: contestID } = req.params; // /contest/:id
-
     // validate ObjectId
     let objectId;
     try {

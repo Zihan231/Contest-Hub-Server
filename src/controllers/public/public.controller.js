@@ -100,7 +100,7 @@ const getLeaderboard = async (req, res) => {
 
     const leaders = await usersCollection
       .find(
-        {}, // or { role: "user" } if you want only normal users
+        { winCount: { $gt: 0 } }, // only users who won at least 1 contest
         {
           projection: {
             password: 0,
@@ -130,5 +130,74 @@ const getLeaderboard = async (req, res) => {
   }
 };
 
+// Popular Contests (sorted by highest participationCount)
+const getPopularContests = async (req, res) => {
+  try {
+    const contestsCollection = getContestsCollection();
 
-module.exports = { getContest, signUp,getLeaderboard };
+    const query = { status: "confirmed" };
+
+    const contests = await contestsCollection
+      .find(query)
+      .sort({ participationCount: -1 }) // -1 = descending, 1 = ascending
+      .limit(6)
+      .toArray();
+
+    if (!contests || contests.length === 0) {
+      return res.status(404).json({ message: "No contests found" });
+    }
+
+    return res.status(200).json({
+      message: "Contests fetched successfully",
+      data: contests,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Failed to fetch contests" });
+  }
+};
+
+// get user's role (by email only)
+const getRole = async (req, res) => {
+  try {
+    const usersCollection = getUsersCollection();
+    const { email } = req.params; 
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
+        example: "/users/role?email=nancy@example.com",
+      });
+    }
+
+    const user = await usersCollection.findOne(
+      { email },
+      { projection: { role: 1, email: 1, name: 1 } }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Role fetched successfully",
+      role: user.role || "user",
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch role",
+    });
+  }
+};
+
+
+
+
+module.exports = { getContest, signUp,getLeaderboard,getPopularContests,getRole };
