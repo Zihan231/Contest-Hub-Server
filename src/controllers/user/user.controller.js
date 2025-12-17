@@ -54,18 +54,6 @@ const updateProfile = async (req, res) => {
       });
     }
     const usersCollection = getUsersCollection();
-    // const UserID = req.params;
-
-    // // validate ObjectId
-    // let objectId;
-    // try {
-    //   objectId = new ObjectId(UserID);
-    // } catch (e) {
-    //   return res.status(400).json({
-    //     message: "Invalid contest ID",
-    //   });
-    // }
-
     const query = { email: decodedEmail };
     const userExist = await usersCollection.findOne(query);
     if (!userExist) {
@@ -387,6 +375,42 @@ const winRate = async (req, res) => {
     });
   }
 };
+
+// See own profile
+const getUserByEmail = async (req, res) => {
+  try {
+    const { decodedEmail } = req;
+    const usersCollection = getUsersCollection();
+
+    // auth middleware didn't attach email
+    if (!decodedEmail) {
+      return res.status(401).json({
+        message: "Unauthorized: decoded email missing",
+      });
+    }
+
+    const user = await usersCollection.findOne({ email: decodedEmail });
+
+    // not found
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // success
+    return res.status(200).json({
+      message: "User fetched successfully",
+      data: user,
+    });
+  } catch (e) {
+    console.error("getUserByEmail error:", e);
+    return res.status(500).json({
+      message: "Failed to fetch user",
+    });
+  }
+};
+
 module.exports = {
   getContestByID,
   updateProfile,
@@ -394,4 +418,5 @@ module.exports = {
   participatedContest,
   joinContest,
   winRate,
+  getUserByEmail
 };

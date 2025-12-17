@@ -6,9 +6,13 @@ const {
   participatedContest,
   joinContest,
   winRate,
+  getUserByEmail,
 } = require("../../controllers/user/user.controller");
 const { default: verifyFirebaseToken } = require("../../middleware/FirebaseAuth/verifyFirebaseToken");
 const router = express.Router();
+
+// see Own Profile
+router.get("/", verifyFirebaseToken, getUserByEmail);
 
 // get contest by ID
 router.get("/:id", verifyFirebaseToken, getContestByID);
