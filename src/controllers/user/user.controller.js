@@ -45,25 +45,29 @@ const getContestByID = async (req, res) => {
 
 // Update Profile
 const updateProfile = async (req, res) => {
-  console.log("Hello");
-
   try {
-    const usersCollection = getUsersCollection();
-    const UserID = req.params;
-
-    // validate ObjectId
-    let objectId;
-    try {
-      objectId = new ObjectId(UserID);
-    } catch (e) {
-      return res.status(400).json({
-        message: "Invalid contest ID",
+    const { decodedEmail } = req;
+    // If token/decoded email missing
+    if (!decodedEmail) {
+      return res.status(401).json({
+        message: "Unauthorized: invalid or missing token",
       });
     }
+    const usersCollection = getUsersCollection();
+    // const UserID = req.params;
 
-    const query = { _id: objectId };
+    // // validate ObjectId
+    // let objectId;
+    // try {
+    //   objectId = new ObjectId(UserID);
+    // } catch (e) {
+    //   return res.status(400).json({
+    //     message: "Invalid contest ID",
+    //   });
+    // }
+
+    const query = { email: decodedEmail };
     const userExist = await usersCollection.findOne(query);
-
     if (!userExist) {
       return res.status(404).json({
         message: "User Not Found",
@@ -85,7 +89,7 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    const filter = { _id: objectId };
+    const filter = { email: decodedEmail };
     const updateDoc = { $set: updates };
 
     const result = await usersCollection.updateOne(filter, updateDoc);
@@ -97,7 +101,7 @@ const updateProfile = async (req, res) => {
     }
     // success
     return res.status(200).json({
-      message: "Contest updated successfully",
+      message: "Profile Updated successfully",
       modifiedCount: result.modifiedCount,
     });
   } catch (e) {
@@ -389,5 +393,5 @@ module.exports = {
   participantsContest,
   participatedContest,
   joinContest,
-  winRate
+  winRate,
 };

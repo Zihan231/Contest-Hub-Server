@@ -14,7 +14,7 @@ const router = express.Router();
 router.get("/:id", verifyFirebaseToken, getContestByID);
 
 //Update Profile
-router.patch("/update/:id", updateProfile);
+router.patch("/update",verifyFirebaseToken, updateProfile);
 
 // see all Participants in a contest
 router.post("/participants", participantsContest);
