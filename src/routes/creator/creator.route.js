@@ -1,9 +1,10 @@
 const express = require("express");
 const { createContest, updateContest,deleteContest, declareWinner, getParticipants, getContestByEmail } = require("../../controllers/creator/creator.controller");
+const { default: verifyFirebaseToken } = require("../../middleware/FirebaseAuth/verifyFirebaseToken");
 const router = express.Router();
 
 // create contest
-router.post("/create", createContest);
+router.post("/create",verifyFirebaseToken, createContest);
 
 // Update contest
 router.patch("/update/:id", updateContest);

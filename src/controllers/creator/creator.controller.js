@@ -8,23 +8,52 @@ const {
 // Create contest
 const createContest = async (req, res) => {
   try {
+    const { decodedEmail } = req;
+
+    // If token/decoded email missing
+    if (!decodedEmail) {
+      return res.status(401).json({
+        message: "Unauthorized: invalid or missing token",
+      });
+    }
+
+    const usersCollection = getUsersCollection();
     const contestCollection = getContestsCollection();
-    let data = req.body;
+
+    const creatorData = await usersCollection.findOne({ email: decodedEmail });
+
+    // User not found => Unauthorized
+    if (!creatorData) {
+      return res.status(401).json({
+        message: "Unauthorized: user not found",
+      });
+    }
+
+    // Role mismatch => Forbidden
+    if (creatorData.role !== "creator") {
+      return res.status(403).json({
+        message: "Forbidden: only creators can create contests",
+      });
+    }
+
+    // Validate body
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        message: "Contest data is required",
+      });
+    }
+
+    // Keep same columns, just set your existing default fields
+    const data = { ...req.body };
     data.participationCount = 0;
     data.winnerEmail = null;
     data.winnerName = null;
     data.winnerPhoto = null;
     data.status = "pending";
 
-    if (!data || Object.keys(data).length === 0) {
-      return res.status(400).json({
-        message: "Contest data is required",
-      });
-    }
-
     const result = await contestCollection.insertOne(data);
 
-    if (!result.acknowledged) {
+    if (!result?.acknowledged) {
       return res.status(500).json({
         message: "Failed to create contest",
       });
@@ -37,12 +66,13 @@ const createContest = async (req, res) => {
       contest: data,
     });
   } catch (e) {
-    console.error(e);
+    console.error("createContest error:", e);
     return res.status(500).json({
       message: "Server error while creating contest",
     });
   }
 };
+
 
 // update contest info
 const updateContest = async (req, res) => {
