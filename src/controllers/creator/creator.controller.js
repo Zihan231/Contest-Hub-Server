@@ -73,7 +73,6 @@ const createContest = async (req, res) => {
   }
 };
 
-
 // update contest info
 const updateContest = async (req, res) => {
   try {
@@ -167,20 +166,44 @@ const updateContest = async (req, res) => {
 // Delete Own contest
 const deleteContest = async (req, res) => {
   try {
+    const { decodedEmail } = req;
+
+    if (!decodedEmail) {
+      return res.status(401).json({
+        message: "Unauthorized: invalid or missing token",
+      });
+    }
+
+    const usersCollection = getUsersCollection();
+    const creatorData = await usersCollection.findOne({ email: decodedEmail });
+
+    if (!creatorData) {
+      return res.status(401).json({
+        message: "Unauthorized: user not found",
+      });
+    }
+
+    // (optional) ensure creator role
+    const allowedRoles = ["creator", "admin"];
+
+    if (!allowedRoles.includes(creatorData.role)) {
+      return res.status(403).json({
+        message: "Forbidden: creator or admin access only",
+      });
+    }
+
     const contestCollection = getContestsCollection();
     const { id: contestID } = req.params;
 
-    // validate ObjectId
     let objectId;
     try {
       objectId = new ObjectId(contestID);
-    } catch (e) {
+    } catch {
       return res.status(400).json({
         message: "Invalid contest ID",
       });
     }
 
-    // fetching the contest
     const query = { _id: objectId };
     const contestData = await contestCollection.findOne(query);
 
@@ -190,32 +213,47 @@ const deleteContest = async (req, res) => {
       });
     }
 
-    // if status confirmed can't delete
-    const oldStatus = contestData.status;
-
+    const oldStatus = String(contestData.status || "").toLowerCase();
     if (oldStatus === "confirmed") {
       return res.status(409).json({
         message: "Contest is already confirmed and cannot be deleted",
-        currentStatus: oldStatus,
+        currentStatus: contestData.status,
+      });
+    }
+
+    if (creatorData.role === "admin") {
+      const result = await contestCollection.deleteOne(query);
+      if (result.deletedCount === 0) {
+        return res.status(404).json({
+          message: "Contest not found or already deleted",
+        });
+      }
+      return res.status(200).json({
+        message: "Contest deleted successfully",
+        deletedCount: result.deletedCount,
+      });
+    }
+
+    if (contestData.creatorEmail !== decodedEmail) {
+      return res.status(403).json({
+        message: "Forbidden: you can only delete your own contests",
       });
     }
 
     const result = await contestCollection.deleteOne(query);
 
     if (result.deletedCount === 0) {
-      // safety check
       return res.status(404).json({
         message: "Contest not found or already deleted",
       });
     }
 
-    // success
     return res.status(200).json({
       message: "Contest deleted successfully",
       deletedCount: result.deletedCount,
     });
   } catch (e) {
-    console.error(e);
+    console.error("deleteContest error:", e);
     return res.status(500).json({
       message: "Failed to delete contest",
     });
@@ -313,8 +351,11 @@ const declareWinner = async (req, res) => {
       return res.status(404).json({ message: "User Not Found" });
     }
 
-    const { name: winnerName, email: winnerEmail, photoURL: winnerPhoto } =
-      userExist;
+    const {
+      name: winnerName,
+      email: winnerEmail,
+      photoURL: winnerPhoto,
+    } = userExist;
 
     // Check if contest exists
     const contestQuery = { _id: contestObjectId };
@@ -325,7 +366,10 @@ const declareWinner = async (req, res) => {
     }
 
     // Contest must be confirmed
-    if (contestExist.status === "pending" || contestExist.status === "rejected") {
+    if (
+      contestExist.status === "pending" ||
+      contestExist.status === "rejected"
+    ) {
       return res.status(409).json({
         message:
           "Contest is not confirmed yet, you cannot declare the winner now. Wait for deadline finish",
@@ -350,7 +394,11 @@ const declareWinner = async (req, res) => {
     }
 
     // If contest already has winner
-    if (contestExist.winnerName || contestExist.winnerEmail || contestExist.winnerPhoto) {
+    if (
+      contestExist.winnerName ||
+      contestExist.winnerEmail ||
+      contestExist.winnerPhoto
+    ) {
       return res.status(409).json({
         message: "This contest is over and winner is already declared.",
       });
@@ -423,7 +471,6 @@ const declareWinner = async (req, res) => {
   }
 };
 
-
 // see own created contests
 const getContestByEmail = async (req, res) => {
   try {
@@ -460,5 +507,11 @@ const getContestByEmail = async (req, res) => {
   }
 };
 
-
-module.exports = { createContest, updateContest, deleteContest, declareWinner,getParticipants,getContestByEmail };
+module.exports = {
+  createContest,
+  updateContest,
+  deleteContest,
+  declareWinner,
+  getParticipants,
+  getContestByEmail,
+};

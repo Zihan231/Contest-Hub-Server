@@ -10,7 +10,7 @@ router.post("/create",verifyFirebaseToken, createContest);
 router.patch("/update/:id", updateContest);
 
 // Delete contest
-router.delete("/delete/:id", deleteContest);
+router.delete("/delete/:id",verifyFirebaseToken, deleteContest);
 
 // Declare winner
 router.patch("/declare/winner", declareWinner);

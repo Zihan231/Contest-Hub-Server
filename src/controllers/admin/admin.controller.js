@@ -4,10 +4,62 @@ const {
   getContestsCollection,
 } = require("../../config/db");
 
+// see all contest
+const getContestData = async (req, res) => {
+  try {
+    const contestsCollection = getContestsCollection();
+
+    const query = {
+      status: { $in: ["pending", "rejected"] },
+    };
+    const contests = await contestsCollection.find(query).toArray();
+
+    if (!contests || contests.length === 0) {
+      return res.status(404).json({
+        message: "No contests found",
+      });
+    }
+    // Success
+    return res.status(200).json({
+      message: "Contests fetched successfully",
+      data: contests,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch contests",
+    });
+  }
+};
 // see all users
 const getUsers = async (req, res) => {
   try {
     const usersCollection = getUsersCollection();
+
+    const { decodedEmail } = req;
+
+    // If token/decoded email missing
+    if (!decodedEmail) {
+      return res.status(401).json({
+        message: "Unauthorized: invalid or missing token",
+      });
+    }
+    
+    const adminData = await usersCollection.findOne({ email: decodedEmail });
+
+    // admin not found => Unauthorized
+    if (!adminData) {
+      return res.status(401).json({
+        message: "Unauthorized: user not found",
+      });
+    }
+    // Role mismatch => Forbidden
+    if (adminData.role !== "admin") {
+      return res.status(403).json({
+        message: "Forbidden: only creators can create contests",
+      });
+    }
+
     const users = await usersCollection.find({}).toArray();
     return res.status(200).json(users);
   } catch (e) {
@@ -198,4 +250,4 @@ const deleteContest = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, changeRole, changeContestStatus,deleteContest };
+module.exports = { getUsers, changeRole, changeContestStatus,deleteContest,getContestData };
