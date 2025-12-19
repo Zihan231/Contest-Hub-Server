@@ -33,7 +33,7 @@ router.get("/participated/:email", participatedContest);
 router.post("/join",verifyFirebaseToken, joinContest);
 
 // Win rate
-router.get("/winRate/:id", winRate)
+router.get("/winRate/:id",verifyFirebaseToken, winRate)
 
 // payment
 router.post('/payment',verifyFirebaseToken, proceedPayment);

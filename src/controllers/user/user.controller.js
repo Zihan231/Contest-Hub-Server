@@ -324,6 +324,7 @@ const joinContest = async (req, res) => {
 // Winning percentage
 const winRate = async (req, res) => {
   try {
+    const { decodedEmail } = req;
     const usersCollection = getUsersCollection();
     const paymentsCollection = getPaymentsCollection();
 
@@ -347,7 +348,11 @@ const winRate = async (req, res) => {
         message: "User not found",
       });
     }
-
+    if (userFound.email !== decodedEmail) {
+      return res.status(403).json({
+        message: "Forbidden: you don't have further access.",
+      });
+    }
     const totalWin = userFound.winCount || 0;
 
     // find total participated contests
@@ -528,7 +533,9 @@ const checkPayment = async (req, res) => {
 
     // If already paid, modifiedCount may be 0
     return res.status(200).json({
-      message: result.modifiedCount ? "Payment updated successfully" : "Payment already marked as paid",
+      message: result.modifiedCount
+        ? "Payment updated successfully"
+        : "Payment already marked as paid",
       paymentStatus: "paid",
       transactionId: session.payment_intent || "",
     });
@@ -539,7 +546,6 @@ const checkPayment = async (req, res) => {
     });
   }
 };
-
 
 // Submit Task
 const submitTask = async (req, res) => {
@@ -594,7 +600,9 @@ const submitTask = async (req, res) => {
     }
 
     //  Must be paid first
-    const paymentStatus = String(record.paymentStatus || "").trim().toLowerCase();
+    const paymentStatus = String(record.paymentStatus || "")
+      .trim()
+      .toLowerCase();
     if (paymentStatus !== "paid") {
       return res.status(402).json({
         message: "Payment required before submitting task",
@@ -656,5 +664,5 @@ module.exports = {
   getUserByEmail,
   proceedPayment,
   checkPayment,
-  submitTask
+  submitTask,
 };

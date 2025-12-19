@@ -7,7 +7,7 @@ const router = express.Router();
 router.post("/create",verifyFirebaseToken, createContest);
 
 // Update contest
-router.patch("/update/:id", updateContest);
+router.patch("/update/:id",verifyFirebaseToken, updateContest);
 
 // Delete contest
 router.delete("/delete/:id",verifyFirebaseToken, deleteContest);
@@ -19,6 +19,6 @@ router.patch("/declare/winner",verifyFirebaseToken, declareWinner);
 router.post("/all-participants",verifyFirebaseToken, getParticipants);
 
 // see own created contests
-router.get("/all/:email", getContestByEmail);
+router.get("/all/:email",verifyFirebaseToken, getContestByEmail);
 
 module.exports = router;

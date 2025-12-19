@@ -76,6 +76,7 @@ const createContest = async (req, res) => {
 // update contest info
 const updateContest = async (req, res) => {
   try {
+    const { decodedEmail } = req;
     const contestCollection = getContestsCollection();
     const { id: contestID } = req.params;
 
@@ -109,7 +110,11 @@ const updateContest = async (req, res) => {
         message: "Contest not found",
       });
     }
-
+    if (contestData.creatorEmail !== decodedEmail) {
+      return res.status(403).json({
+        message: "Forbidden: You don't own this contest",
+      });
+    }
     // if status confirm can't delete/update
     const oldStatus = contestData.status;
 
@@ -485,10 +490,15 @@ const declareWinner = async (req, res) => {
 const getContestByEmail = async (req, res) => {
   try {
     const userEmail = req.params.email;
-
+    const { decodedEmail } = req;
     if (!userEmail) {
       return res.status(400).json({
         message: "Email is required",
+      });
+    }
+    if (userEmail !== decodedEmail) {
+      return res.status(403).json({
+        message: "Forbidden: You don't have further access",
       });
     }
 
