@@ -263,7 +263,6 @@ const deleteContest = async (req, res) => {
 // see participants in a contest
 const getParticipants = async (req, res) => {
   try {
-    console.log("Bal");
     const { decodedEmail: userEmail } = req;
     const paymentsCollection = getPaymentsCollection();
     const { contestId } = req.body;
@@ -325,6 +324,7 @@ const getParticipants = async (req, res) => {
 // Declare a winner and update winner's totalEarnings
 const declareWinner = async (req, res) => {
   try {
+    const { decodedEmail } = req;
     const { winnerID, contestID } = req.body;
 
     if (!winnerID || !contestID) {
@@ -374,7 +374,12 @@ const declareWinner = async (req, res) => {
     if (!contestExist) {
       return res.status(404).json({ message: "Contest Not Found" });
     }
-
+    // is this creator own this contest
+    if (contestExist.creatorEmail !== decodedEmail) {
+      return res.status(403).json({
+        message: "Forbidden: You don't Own this Contest",
+      });
+    }
     // Contest must be confirmed
     if (
       contestExist.status === "pending" ||
@@ -426,7 +431,6 @@ const declareWinner = async (req, res) => {
         message: "Payment is not clear.",
       });
     }
-
     // Prize money (must be a valid number)
     const prizeMoney = Number(contestExist.prizeMoney || 0);
     if (Number.isNaN(prizeMoney) || prizeMoney < 0) {
@@ -439,17 +443,13 @@ const declareWinner = async (req, res) => {
     // Declare winner (atomic filter to prevent double declare in race condition)
     const filter = {
       _id: contestObjectId,
-      winnerEmail: { $exists: false },
-      winnerName: { $exists: false },
-      winnerPhoto: { $exists: false },
+      winnerEmail: { $in: [null, ""] },
+      winnerName: { $in: [null, ""] },
+      winnerPhoto: { $in: [null, ""] },
     };
 
     const update = {
-      $set: {
-        winnerName,
-        winnerEmail,
-        winnerPhoto,
-      },
+      $set: { winnerName, winnerEmail, winnerPhoto },
     };
 
     const result = await contestCollection.updateOne(filter, update);

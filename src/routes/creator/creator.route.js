@@ -13,7 +13,7 @@ router.patch("/update/:id", updateContest);
 router.delete("/delete/:id",verifyFirebaseToken, deleteContest);
 
 // Declare winner
-router.patch("/declare/winner", declareWinner);
+router.patch("/declare/winner",verifyFirebaseToken, declareWinner);
 
 // see all participants
 router.post("/all-participants",verifyFirebaseToken, getParticipants);
