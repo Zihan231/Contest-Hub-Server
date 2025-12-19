@@ -4,6 +4,9 @@ const {
   getUsersCollection,
   getPaymentsCollection,
 } = require("../../config/db");
+require("dotenv").config();
+
+const stripe = require("stripe")(process.env.Payment_Key);
 
 // get Contest by Id
 const getContestByID = async (req, res) => {
@@ -190,9 +193,10 @@ const participatedContest = async (req, res) => {
 // Participate in Contest
 const joinContest = async (req, res) => {
   try {
-    const { contestID, userID } = req.body;
+    const { decodedEmail } = req;
+    const { contestID } = req.body;
 
-    if (!contestID || !userID) {
+    if (!contestID) {
       return res.status(400).json({
         message: "contestID and userID are required",
       });
@@ -201,19 +205,9 @@ const joinContest = async (req, res) => {
     const contestCollection = getContestsCollection();
     const usersCollection = getUsersCollection();
     const paymentsCollection = getPaymentsCollection();
-
-    // validate userID ObjectId
-    let userIDObject;
-    try {
-      userIDObject = new ObjectId(userID);
-    } catch (e) {
-      return res.status(400).json({
-        message: "Invalid User ID",
-      });
-    }
-
+    
     // Check if user exist
-    const userQuery = { _id: userIDObject };
+    const userQuery = { email: decodedEmail };
     const userExist = await usersCollection.findOne(userQuery);
 
     if (!userExist) {
@@ -222,7 +216,7 @@ const joinContest = async (req, res) => {
       });
     }
 
-    const { name: userName, email: userEmail, photoURL: userPhoto } = userExist;
+    const { name: userName, email: userEmail, photoURL: userPhoto, _id: userIDObject } = userExist;
 
     // validate contest ObjectId
     let contestObjectId;
@@ -279,8 +273,8 @@ const joinContest = async (req, res) => {
       participantEmail: userEmail,
       participantPhoto: userPhoto,
       price: entryFee,
-      paymentStatus: "paid",
-      transactionId: "zzz-qqq-ddd", // temp
+      paymentStatus: "unPaid",
+      transactionId: "", // temp
       taskSubmission: null,
       submissionDate: new Date(),
     };
@@ -411,6 +405,38 @@ const getUserByEmail = async (req, res) => {
   }
 };
 
+// payment
+const proceedPayment = async (req, res) => {
+  const paymentInfo = req.body;
+  const amount = parseInt(paymentInfo.cost)*100;
+  const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        // Provide the exact Price ID (for example, price_1234) of the product you want to sell
+        price_data: {
+          currency: 'USD',
+          unit_amount: amount,
+          product_data: {
+            name: paymentInfo.contestName,
+
+          }
+        },
+        quantity: 1,
+      },
+    ],
+    customer_email: paymentInfo.senderEmail,
+
+    mode: "payment",
+    metadata: {
+      contestId: paymentInfo.contestId
+    },
+    success_url: `${process.env.Site_Domain}/dashboard`,
+    cancel_url: `${process.env.Site_Domain}/dashboard/profile`,
+  });
+  console.log(session);
+  res.send({ url: session.url });
+};
+
 module.exports = {
   getContestByID,
   updateProfile,
@@ -418,5 +444,5 @@ module.exports = {
   participatedContest,
   joinContest,
   winRate,
-  getUserByEmail
+  getUserByEmail,
 };

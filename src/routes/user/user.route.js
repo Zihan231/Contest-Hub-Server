@@ -27,7 +27,7 @@ router.post("/participants", participantsContest);
 router.get("/participated/:email", participatedContest);
 
 // Join in contest
-router.post("/join", joinContest);
+router.post("/join",verifyFirebaseToken, joinContest);
 
 // Win rate
 router.get("/winRate/:id", winRate)
