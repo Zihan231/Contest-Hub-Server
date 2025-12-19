@@ -291,7 +291,7 @@ const joinContest = async (req, res) => {
       paymentStatus: "unPaid",
       transactionId: "",
       taskSubmission: null,
-      submissionDate: new Date(),
+      submissionDate: null,
       deadline,
     };
 
@@ -543,8 +543,109 @@ const checkPayment = async (req, res) => {
 
 // Submit Task
 const submitTask = async (req, res) => {
-  
-}
+  try {
+    const { decodedEmail } = req;
+    const { taskLink, contestID } = req.body;
+
+    //  Auth check
+    if (!decodedEmail) {
+      return res.status(401).json({
+        message: "Unauthorized: invalid or missing token",
+      });
+    }
+
+    //  Validate body
+    if (!taskLink || !contestID) {
+      return res.status(400).json({
+        message: "taskLink and contestID are required",
+      });
+    }
+
+    //  Validate contestID
+    if (!ObjectId.isValid(contestID)) {
+      return res.status(400).json({
+        message: "Invalid contestID",
+      });
+    }
+
+    //  Validate taskLink format (basic)
+    try {
+      new URL(taskLink);
+    } catch {
+      return res.status(400).json({
+        message: "Invalid taskLink URL",
+      });
+    }
+
+    const paymentsCollection = getPaymentsCollection();
+
+    const query = {
+      contestId: new ObjectId(contestID),
+      participantEmail: decodedEmail,
+    };
+
+    const record = await paymentsCollection.findOne(query);
+
+    // 404: no registration record
+    if (!record) {
+      return res.status(404).json({
+        message: "No registration found for this contest",
+      });
+    }
+
+    //  Must be paid first
+    const paymentStatus = String(record.paymentStatus || "").trim().toLowerCase();
+    if (paymentStatus !== "paid") {
+      return res.status(402).json({
+        message: "Payment required before submitting task",
+        paymentStatus: record.paymentStatus,
+      });
+    }
+
+    //  Prevent double submit
+    if (record.taskSubmission) {
+      return res.status(409).json({
+        message: "Task already submitted",
+        taskSubmission: record.taskSubmission,
+      });
+    }
+
+    const update = {
+      $set: {
+        taskSubmission: taskLink,
+        submissionDate: new Date(),
+      },
+    };
+
+    const result = await paymentsCollection.updateOne(query, update);
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        message: "No registration found to update",
+      });
+    }
+
+    if (result.modifiedCount === 0) {
+      return res.status(200).json({
+        message: "No changes made (already up to date)",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Task submitted successfully",
+      data: {
+        contestID,
+        participantEmail: decodedEmail,
+        taskSubmission: taskLink,
+      },
+    });
+  } catch (e) {
+    console.error("submitTask error:", e);
+    return res.status(500).json({
+      message: "Failed to submit task",
+    });
+  }
+};
 module.exports = {
   getContestByID,
   updateProfile,

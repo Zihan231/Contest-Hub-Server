@@ -16,7 +16,7 @@ router.delete("/delete/:id",verifyFirebaseToken, deleteContest);
 router.patch("/declare/winner", declareWinner);
 
 // see all participants
-router.post("/participants", getParticipants);
+router.post("/all-participants",verifyFirebaseToken, getParticipants);
 
 // see own created contests
 router.get("/all/:email", getContestByEmail);

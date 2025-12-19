@@ -263,8 +263,10 @@ const deleteContest = async (req, res) => {
 // see participants in a contest
 const getParticipants = async (req, res) => {
   try {
+    console.log("Bal");
+    const { decodedEmail: userEmail } = req;
     const paymentsCollection = getPaymentsCollection();
-    const { contestId, userEmail } = req.body;
+    const { contestId } = req.body;
 
     // check if this person enrolled in this contest
 
@@ -279,7 +281,11 @@ const getParticipants = async (req, res) => {
         message: "Forbidden access: This is not your contest",
       });
     }
-
+    if (valid.taskSubmission === null) {
+      return res.status(400).json({
+        message: "Bad Request: Task is not submitted",
+      });
+    }
     // fetching all participants for this contest
     const query = { contestId: new ObjectId(contestId) };
 
@@ -289,6 +295,10 @@ const getParticipants = async (req, res) => {
           participantName: 1,
           participantEmail: 1,
           participantPhoto: 1,
+          taskSubmission: 1,
+          participantId: 1,
+          submissionDate: 1,
+          contestName: 1,
           _id: 0,
         },
       })

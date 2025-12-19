@@ -9,6 +9,7 @@ const {
   getUserByEmail,
   proceedPayment,
   checkPayment,
+  submitTask,
 } = require("../../controllers/user/user.controller");
 const { default: verifyFirebaseToken } = require("../../middleware/FirebaseAuth/verifyFirebaseToken");
 const router = express.Router();
@@ -40,4 +41,6 @@ router.post('/payment',verifyFirebaseToken, proceedPayment);
 // check payment
 router.patch('/payment/check',verifyFirebaseToken, checkPayment);
 
+// submit task
+router.patch('/submit-task', verifyFirebaseToken, submitTask);
 module.exports = router;
