@@ -35,9 +35,9 @@ router.post("/join",verifyFirebaseToken, joinContest);
 router.get("/winRate/:id", winRate)
 
 // payment
-router.post('/payment', proceedPayment);
+router.post('/payment',verifyFirebaseToken, proceedPayment);
 
 // check payment
-router.patch('/payment/check', checkPayment);
+router.patch('/payment/check',verifyFirebaseToken, checkPayment);
 
 module.exports = router;

@@ -261,7 +261,7 @@ const joinContest = async (req, res) => {
       });
     }
 
-    const { contestName, entryFee, creatorEmail, } = contestData;
+    const { contestName, entryFee, creatorEmail } = contestData;
 
     // ✅ 409: conflict (already joined)
     const userContestQuery = {
@@ -320,7 +320,6 @@ const joinContest = async (req, res) => {
     });
   }
 };
-
 
 // Winning percentage
 const winRate = async (req, res) => {
@@ -423,59 +422,129 @@ const getUserByEmail = async (req, res) => {
 
 // Do payment
 const proceedPayment = async (req, res) => {
-  const paymentInfo = req.body;
-  const amount = parseInt(paymentInfo.cost)*100;
-  const session = await stripe.checkout.sessions.create({
-    line_items: [
-      {
-        // Provide the exact Price ID (for example, price_1234) of the product you want to sell
-        price_data: {
-          currency: 'USD',
-          unit_amount: amount,
-          product_data: {
-            name: paymentInfo.contestName,
-          }
-        },
-        quantity: 1,
-      },
-    ],
-    customer_email: paymentInfo.userEmail,
+  try {
+    const paymentInfo = req.body;
+    const amount = Number(paymentInfo?.cost) * 100;
 
-    mode: "payment",
-    metadata: {
-      contestId: paymentInfo.contestId
-    },
-    success_url: `${process.env.Site_Domain}/dashboard/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.Site_Domain}/dashboard/profile`,
-  });
-  console.log(session);
-  res.send({ url: session.url });
+    if (
+      !paymentInfo?.contestId ||
+      !paymentInfo?.contestName ||
+      !paymentInfo?.userEmail ||
+      !Number.isFinite(amount)
+    ) {
+      return res.status(400).json({ message: "Invalid paymentInfo" });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"], // ✅ force card only for testing
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: Math.round(amount),
+            product_data: { name: paymentInfo.contestName },
+          },
+          quantity: 1,
+        },
+      ],
+      customer_email: paymentInfo.userEmail,
+      mode: "payment",
+      metadata: { contestId: String(paymentInfo.contestId) },
+      success_url: `${process.env.Site_Domain}/dashboard/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.Site_Domain}/dashboard/payment/failed`,
+    });
+    // console.log("Session",session);
+    return res.status(200).json({
+      url: session.url,
+      sessionId: session.id, // helpful for debugging
+    });
+  } catch (e) {
+    console.error("proceedPayment error:", e);
+    return res
+      .status(500)
+      .json({ message: "Failed to create payment session" });
+  }
 };
 
-// check payment
+// Check payment
 const checkPayment = async (req, res) => {
-  const session_id = req.query.session_id;
-  // console.log("Session ID",session_id);
-  const session = await stripe.checkout.sessions.retrieve(session_id);
-  // console.log("session retrieved:", session);
-  if (session.payment_status === 'paid') {
-    const id = session.metadata.contestId;
-    const query = { contestId: new ObjectId(id) };
+  try {
+    const { decodedEmail } = req;
+
+    if (!decodedEmail) {
+      return res.status(401).json({
+        message: "Unauthorized: invalid or missing token",
+      });
+    }
+
+    const sessionId = String(req.query.session_id || "").trim();
+    if (!sessionId) {
+      return res.status(400).json({
+        message: "session_id is required",
+      });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    // Not paid yet (not an error)
+    if (session.payment_status !== "paid") {
+      return res.status(200).json({
+        message: "Payment not completed yet",
+        paymentStatus: session.payment_status,
+        status: session.status,
+      });
+    }
+
+    const contestID = session?.metadata?.contestId;
+    if (!contestID || !ObjectId.isValid(contestID)) {
+      return res.status(400).json({
+        message: "Invalid or missing contestId in session metadata",
+      });
+    }
+
+    const paymentsCollection = getPaymentsCollection();
+
+    const query = {
+      contestId: new ObjectId(contestID),
+      participantEmail: decodedEmail,
+    };
+
+    const isRegistered = await paymentsCollection.findOne(query);
+
+    if (!isRegistered) {
+      return res.status(404).json({
+        message: "Payment record not found for this contest/user",
+      });
+    }
+
     const update = {
       $set: {
         paymentStatus: "paid",
-      }
-    }
-    const paymentsCollection = getPaymentsCollection();
-    const result = await paymentsCollection.updateOne(query, update);
-    if (result) {
-      console.log("Payment done")
-    } else {
-      console.log("No");
-    }
-  }
-}
+        transactionId: session.payment_intent || "",
+      },
+    };
 
+    const result = await paymentsCollection.updateOne(query, update);
+
+    // If already paid, modifiedCount may be 0
+    return res.status(200).json({
+      message: result.modifiedCount ? "Payment updated successfully" : "Payment already marked as paid",
+      paymentStatus: "paid",
+      transactionId: session.payment_intent || "",
+    });
+  } catch (e) {
+    console.error("checkPayment error:", e);
+    return res.status(500).json({
+      message: "Failed to verify payment",
+    });
+  }
+};
+
+
+// Submit Task
+const submitTask = async (req, res) => {
+  
+}
 module.exports = {
   getContestByID,
   updateProfile,
@@ -485,5 +554,6 @@ module.exports = {
   winRate,
   getUserByEmail,
   proceedPayment,
-  checkPayment
+  checkPayment,
+  submitTask
 };
