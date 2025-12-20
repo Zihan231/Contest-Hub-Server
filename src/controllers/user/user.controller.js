@@ -106,20 +106,21 @@ const updateProfile = async (req, res) => {
 // see participants in a contest
 const participantsContest = async (req, res) => {
   try {
+    const { decodedEmail } = req;
     const paymentsCollection = getPaymentsCollection();
-    const { contestId, userID } = req.body;
+    const { contestId } = req.body;
 
     // check if this person enrolled in this contest
 
     const validityQuery = {
       contestId: new ObjectId(contestId),
-      participantId: new ObjectId(userID),
+      participantEmail: decodedEmail,
     };
 
     const valid = await paymentsCollection.findOne(validityQuery);
     if (!valid) {
       return res.status(403).json({
-        message: "Forbidden access: you are already enrolled in this contest",
+        message: "Forbidden access: you are not enrolled in this contest Bal",
       });
     }
 
@@ -196,7 +197,7 @@ const joinContest = async (req, res) => {
     const { decodedEmail } = req;
     const { contestID } = req.body;
 
-    // ✅ 400: bad request (missing required field)
+    //  400: bad request (missing required field)
     if (!contestID) {
       return res.status(400).json({
         message: "contestID is required",
@@ -207,14 +208,14 @@ const joinContest = async (req, res) => {
     const usersCollection = getUsersCollection();
     const paymentsCollection = getPaymentsCollection();
 
-    // ✅ 401: unauthorized (missing auth identity)
+    //  401: unauthorized (missing auth identity)
     if (!decodedEmail) {
       return res.status(401).json({
         message: "Unauthorized access",
       });
     }
 
-    // ✅ 404: user not found
+    //  404: user not found
     const userQuery = { email: decodedEmail };
     const userExist = await usersCollection.findOne(userQuery);
 
@@ -231,7 +232,7 @@ const joinContest = async (req, res) => {
       _id: userIDObject,
     } = userExist;
 
-    // ✅ 400: invalid contest id format
+    //  400: invalid contest id format
     let contestObjectId;
     try {
       contestObjectId = new ObjectId(contestID);
@@ -241,7 +242,7 @@ const joinContest = async (req, res) => {
       });
     }
 
-    // ✅ 404: contest not found
+    //  404: contest not found
     const contestQuery = { _id: contestObjectId };
     const contestData = await contestCollection.findOne(contestQuery);
 
@@ -251,7 +252,7 @@ const joinContest = async (req, res) => {
       });
     }
 
-    // ✅ 409: conflict (contest ended)
+    //  409: conflict (contest ended)
     const deadline = new Date(contestData.deadline);
     const now = new Date();
     if (now > deadline) {
@@ -261,9 +262,9 @@ const joinContest = async (req, res) => {
       });
     }
 
-    const { contestName, entryFee, creatorEmail } = contestData;
+    const { contestName, entryFee, creatorEmail, image } = contestData;
 
-    // ✅ 409: conflict (already joined)
+    //  409: conflict (already joined)
     const userContestQuery = {
       contestId: contestObjectId,
       participantId: userIDObject,
@@ -277,10 +278,9 @@ const joinContest = async (req, res) => {
       });
     }
 
-    // payment logic will come here later
-
     const inputData = {
       contestName,
+      contestImage: image,
       contestId: contestObjectId,
       creatorEmail: creatorEmail,
       participantId: userIDObject,
@@ -295,7 +295,7 @@ const joinContest = async (req, res) => {
       deadline,
     };
 
-    // ✅ 201: created
+    //  201: created
     const insertResult = await paymentsCollection.insertOne(inputData);
 
     if (!insertResult.acknowledged) {
@@ -303,10 +303,6 @@ const joinContest = async (req, res) => {
         message: "Failed to join contest",
       });
     }
-
-    await contestCollection.updateOne(contestQuery, {
-      $inc: { participationCount: 1 },
-    });
 
     return res.status(201).json({
       message: "Contest joined successfully",
@@ -442,7 +438,7 @@ const proceedPayment = async (req, res) => {
     }
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"], // ✅ force card only for testing
+      payment_method_types: ["card"], //  force card only for testing
       line_items: [
         {
           price_data: {
@@ -531,15 +527,24 @@ const checkPayment = async (req, res) => {
     };
 
     const result = await paymentsCollection.updateOne(query, update);
-
-    // If already paid, modifiedCount may be 0
-    return res.status(200).json({
-      message: result.modifiedCount
-        ? "Payment updated successfully"
-        : "Payment already marked as paid",
-      paymentStatus: "paid",
-      transactionId: session.payment_intent || "",
-    });
+    if (result.modifiedCount > 0) {
+      const contestCollection = getContestsCollection();
+      // participation count increment
+      await contestCollection.updateOne(
+        { _id: new ObjectId(contestID) },
+        {
+          $inc: { participationCount: 1 },
+        }
+      );
+      // If already paid, modifiedCount may be 0
+      return res.status(200).json({
+        message: result.modifiedCount
+          ? "Payment updated successfully"
+          : "Payment already marked as paid",
+        paymentStatus: "paid",
+        transactionId: session.payment_intent || "",
+      });
+    }
   } catch (e) {
     console.error("checkPayment error:", e);
     return res.status(500).json({
@@ -670,7 +675,7 @@ const getWinHistory = async (req, res) => {
 
     const query = { winnerEmail: decodedEmail };
 
-    // ✅ find() returns a cursor, so you must use toArray()
+    //  find() returns a cursor, so you must use toArray()
     const winHistory = await contestCollection
       .find(query)
       .sort({ _id: -1 }) // newest first (safe even without createdAt)
@@ -695,6 +700,7 @@ const getWinHistory = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   getContestByID,
   updateProfile,

@@ -25,7 +25,7 @@ router.get("/:id", verifyFirebaseToken, getContestByID);
 router.patch("/update",verifyFirebaseToken, updateProfile);
 
 // see all Participants in a contest
-router.post("/participants", participantsContest);
+router.post("/participants",verifyFirebaseToken, participantsContest);
 
 // see participated contests
 router.get("/participated/:email", participatedContest);

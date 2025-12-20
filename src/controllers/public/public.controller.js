@@ -196,7 +196,96 @@ const getRole = async (req, res) => {
   }
 };
 
+//Search 
+const getItems = async (req, res) => {
+  try {
+    const contestsCollection = getContestsCollection();
+
+    // --------------------
+    // Query params
+    // --------------------
+    const {
+      tab = "all",
+      q = "",
+      page = 1,
+      limit = 10,
+      sort = "popular",
+    } = req.query;
+
+    const pageNumber = Math.max(Number(page), 1);
+    const pageSize = Math.max(Number(limit), 1);
+    const skip = (pageNumber - 1) * pageSize;
+
+    // --------------------
+    // Filter logic
+    // --------------------
+    const filters = [];
+
+    // TAB / CATEGORY filter
+    if (tab && tab.toLowerCase() !== "all") {
+      filters.push({
+        $or: [
+          { contestType: { $regex: tab, $options: "i" } },
+          { tags: { $elemMatch: { $regex: tab, $options: "i" } } },
+        ],
+      });
+    }
+
+    // SEARCH filter
+    if (q && q.trim()) {
+      filters.push({
+        $or: [
+          { contestName: { $regex: q, $options: "i" } },
+          { description: { $regex: q, $options: "i" } },
+          { tags: { $elemMatch: { $regex: q, $options: "i" } } },
+        ],
+      });
+    }
+
+    const query = filters.length > 0 ? { $and: filters } : {};
+
+    // --------------------
+    // Sort logic
+    // --------------------
+    let sortQuery = {};
+    if (sort === "popular") sortQuery = { participationCount: -1 };
+    if (sort === "prize-high") sortQuery = { prizeMoney: -1 };
+    if (sort === "prize-low") sortQuery = { prizeMoney: 1 };
+
+    // --------------------
+    // DB queries
+    // --------------------
+    const totalCount = await contestsCollection.countDocuments(query);
+
+    const contests = await contestsCollection
+      .find(query)
+      .sort(sortQuery)
+      .skip(skip)
+      .limit(pageSize)
+      .toArray();
+
+    // --------------------
+    // Response
+    // --------------------
+    res.status(200).json({
+      success: true,
+      meta: {
+        page: pageNumber,
+        limit: pageSize,
+        totalItems: totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+      data: contests,
+    });
+  } catch (error) {
+    console.error("Get contests error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch contests",
+    });
+  }
+};
 
 
 
-module.exports = { getContest, signUp,getLeaderboard,getPopularContests,getRole };
+module.exports = { getContest, signUp,getLeaderboard,getPopularContests,getRole,getItems };

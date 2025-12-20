@@ -1,5 +1,5 @@
 const express = require("express");
-const { getContest, signUp, getLeaderboard, getPopularContests, getRole } = require("../../controllers/public/public.controller");
+const { getContest, signUp, getLeaderboard, getPopularContests, getRole, getItems } = require("../../controllers/public/public.controller");
 
 const router = express.Router();
 
@@ -17,4 +17,7 @@ router.get("/contests/popular", getPopularContests)
 
 // get role 
 router.get("/user/getRole/:email", getRole)
+
+// Search 
+router.get("/contests/find", getItems);
 module.exports = router;
