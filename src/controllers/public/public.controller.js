@@ -38,7 +38,6 @@ const signUp = async (req, res) => {
     const data = req.body;
 
     const { name, email, role, photoURL, bio, address } = data;
-
     // basic validation
     if (!email) {
       return res.status(400).json({
@@ -52,8 +51,7 @@ const signUp = async (req, res) => {
     }
     const finalEmail = email.toLowerCase();
     // check if user already exists
-    const existingUser = await usersCollection.findOne({ finalEmail });
-
+    const existingUser = await usersCollection.findOne({ email: finalEmail });
     if (existingUser) {
       return res.status(409).json({
         message: "User already exists with this email",
@@ -219,7 +217,9 @@ const getItems = async (req, res) => {
     // --------------------
     // Filter logic
     // --------------------
-    const filters = [];
+    const filters = [
+      { status: "confirmed" } 
+    ];
 
     // TAB / CATEGORY filter
     if (tab && tab.toLowerCase() !== "all") {
@@ -242,7 +242,8 @@ const getItems = async (req, res) => {
       });
     }
 
-    const query = filters.length > 0 ? { $and: filters } : {};
+    // Combine all filters with AND
+    const query = { $and: filters };
 
     // --------------------
     // Sort logic
