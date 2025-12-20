@@ -22,7 +22,21 @@
 * **RESTful API:** Well-structured endpoints for Users, Contests, and Payments.
 
 ---
+## ✨ Server Features
 
+* **🔐 JWT Authentication:** Secure JSON Web Token implementation to protect private API routes and verify user identities.
+* **🛡️ Role-Based Middleware:** Custom middleware (`verifyAdmin`, `verifyCreator`) to strictly enforce access control for sensitive endpoints.
+* **💳 Stripe Payment Integration:** Backend logic to create secure Checkout Sessions and verify payment statuses via `session_id`.
+* **📊 MongoDB Aggregation:** Complex aggregation pipelines to calculate platform statistics (total users, total contests, winner counts).
+* **⚡ Optimized Querying:** Efficient database querying with sorting, pagination, and text search capabilities for contest data.
+* **🔄 Status Workflow:** API endpoints to handle contest approval workflows (Pending → Approved) managed by Admins.
+* **👤 User Management APIs:** Endpoints to manage user roles, update profile data, and track participation history.
+* **📝 Submission Handling:** Logic to link user submissions to specific contests and allow Creators to mark them as winners.
+* **🌐 CORS Configuration:** Secure Cross-Origin Resource Sharing setup to allow requests only from trusted client domains.
+* **🔑 Environment Security:** Usage of `dotenv` to secure sensitive keys like DB credentials and Stripe secrets.
+* **🚀 RESTful Architecture:** Clean and organized API route structure separated by controllers and services.
+* **⚠️ Error Handling:** Standardized error responses and status codes for easier frontend debugging.
+---
 ## 🛠️ **Technology Stack**
 
 * **Runtime:** Node.js
