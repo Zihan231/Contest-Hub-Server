@@ -356,30 +356,31 @@ const winRate = async (req, res) => {
     const totalWin = userFound.winCount || 0;
 
     // find total participated contests
-    const totalParticipations = await paymentsCollection.countDocuments({
+    const totalParticipation = await paymentsCollection.countDocuments({
       participantId: objectId,
+      paymentStatus: "paid",
     });
 
     // if no participation, win rate is 0 by definition
-    if (totalParticipations === 0) {
+    if (totalParticipation === 0) {
       return res.status(200).json({
-        message: "No participations found for this user",
+        message: "No Participation found for this user",
         userId: userID,
         totalWin,
-        totalParticipations,
+        totalParticipation,
         winRate: 0,
       });
     }
 
-    // Win Percentage = (Total Wins / Total Participations) * 100
-    const winRateValue = (totalWin / totalParticipations) * 100;
+    // Win Percentage = (Total Wins / Total Participation) * 100
+    const winRateValue = (totalWin / totalParticipation) * 100;
     const winRateRounded = Number(winRateValue.toFixed(2));
 
     return res.status(200).json({
       message: "Win rate calculated successfully",
       userId: userID,
       totalWin,
-      totalParticipations,
+      totalParticipation,
       winRate: winRateRounded, // in percentage
     });
   } catch (e) {
@@ -654,6 +655,46 @@ const submitTask = async (req, res) => {
     });
   }
 };
+
+// See Winning history
+const getWinHistory = async (req, res) => {
+  try {
+    const contestCollection = getContestsCollection();
+    const { decodedEmail } = req;
+
+    if (!decodedEmail) {
+      return res.status(403).json({
+        message: "Forbidden access",
+      });
+    }
+
+    const query = { winnerEmail: decodedEmail };
+
+    // ✅ find() returns a cursor, so you must use toArray()
+    const winHistory = await contestCollection
+      .find(query)
+      .sort({ _id: -1 }) // newest first (safe even without createdAt)
+      .toArray();
+
+    if (!winHistory || winHistory.length === 0) {
+      return res.status(404).json({
+        message: "No winning history found",
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      message: "Winning history fetched successfully",
+      count: winHistory.length,
+      data: winHistory,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Failed to fetch winning history",
+    });
+  }
+};
 module.exports = {
   getContestByID,
   updateProfile,
@@ -665,4 +706,5 @@ module.exports = {
   proceedPayment,
   checkPayment,
   submitTask,
+  getWinHistory,
 };

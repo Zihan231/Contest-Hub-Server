@@ -10,6 +10,7 @@ const {
   proceedPayment,
   checkPayment,
   submitTask,
+  getWinHistory,
 } = require("../../controllers/user/user.controller");
 const { default: verifyFirebaseToken } = require("../../middleware/FirebaseAuth/verifyFirebaseToken");
 const router = express.Router();
@@ -43,4 +44,8 @@ router.patch('/payment/check',verifyFirebaseToken, checkPayment);
 
 // submit task
 router.patch('/submit-task', verifyFirebaseToken, submitTask);
+
+// see winning history
+router.get('/win/history', verifyFirebaseToken, getWinHistory);
+
 module.exports = router;
