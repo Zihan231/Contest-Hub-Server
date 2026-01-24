@@ -120,7 +120,7 @@ const participantsContest = async (req, res) => {
     const valid = await paymentsCollection.findOne(validityQuery);
     if (!valid) {
       return res.status(403).json({
-        message: "Forbidden access: you are not enrolled in this contest Bal",
+        message: "Forbidden access: you are not enrolled in this contest",
       });
     }
 
@@ -159,7 +159,13 @@ const participantsContest = async (req, res) => {
 // see the participated contests
 const participatedContest = async (req, res) => {
   try {
+    const { decodedEmail } = req;
     const userEmail = req.params.email;
+    if (userEmail !== decodedEmail) {
+      return res.status(403).json({
+        message: "Forbidden access: you are not allowed to see the data",
+      });
+    }
     const paymentsCollection = getPaymentsCollection();
 
     if (!userEmail) {

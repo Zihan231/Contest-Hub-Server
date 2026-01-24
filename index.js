@@ -5,7 +5,13 @@ const cors = require("cors");
 const port = process.env.PORT || 3000;
 
 // middle ware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173", // Keep localhost for development
+    "https://contesthub-client.vercel.app" // 🔴 REPLACE with your actual Frontend Vercel link
+  ],
+  credentials: true
+}));
 // for json body parse
 app.use(express.json());
 // Import Database connection

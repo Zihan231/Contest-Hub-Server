@@ -1,6 +1,10 @@
 import admin from "firebase-admin";
 // In Node.js, importing JSON requires the 'with' attribute or assertions
-import serviceAccount from "../../config/firebase.json" with { type: "json" };
+// import serviceAccount from "../../config/firebase.json" with { type: "json" };
+
+// const serviceAccount = require("./firebase-admin-key.json");
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
+const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),

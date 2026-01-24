@@ -28,7 +28,7 @@ router.patch("/update",verifyFirebaseToken, updateProfile);
 router.post("/participants",verifyFirebaseToken, participantsContest);
 
 // see participated contests
-router.get("/participated/:email", participatedContest);
+router.get("/participated/:email",verifyFirebaseToken, participatedContest);
 
 // Join in contest
 router.post("/join",verifyFirebaseToken, joinContest);
