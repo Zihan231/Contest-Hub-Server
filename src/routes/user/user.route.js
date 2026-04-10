@@ -19,7 +19,7 @@ const router = express.Router();
 router.get("/", verifyFirebaseToken, getUserByEmail);
 
 // get contest by ID
-router.get("/:id", verifyFirebaseToken, getContestByID);
+router.get("/:id", getContestByID);
 
 //Update Profile
 router.patch("/update",verifyFirebaseToken, updateProfile);
