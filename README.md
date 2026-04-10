@@ -763,7 +763,7 @@ This project is licensed under the **ISC License** - see the LICENSE file for de
 </p>
 
 <p align="center">
-  <b>GameHub</b> was created with ❤️ by <a href="https://github.com/Zihan231">Zihan231</a>
+  <b>ContestHUb</b> was created with ❤️ by <a href="https://github.com/Zihan231">Zihan231</a>
 </p>
 
 <p align="center">
@@ -782,10 +782,6 @@ This project is licensed under the **ISC License** - see the LICENSE file for de
   <a href="https://github.com/Zihan231" target="_blank">
     <img src="https://cdn-icons-png.flaticon.com/512/733/733553.png" width="30px" alt="GitHub"/>
   </a>
-</p>
-
-<p align="center">
-  🧠 <i>This website is a demo showcase project created for learning purposes.</i>
 </p>
 
 ---
