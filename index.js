@@ -8,7 +8,8 @@ const port = process.env.PORT || 3000;
 app.use(cors({
   origin: [
     "http://localhost:5173", // Keep localhost for development
-    "https://contesthub-client.vercel.app" // 🔴 REPLACE with your actual Frontend Vercel link
+    "https://contest-hub-client-rho.vercel.app",
+    "https://contesthub-a21c5.web.app", // 🔴 REPLACE with your actual Frontend Vercel link
   ],
   credentials: true
 }));
